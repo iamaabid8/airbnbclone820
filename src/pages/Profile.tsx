@@ -1,9 +1,69 @@
 
 import { User, Settings, BookOpen, Home, Heart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Profile = () => {
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user is logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate('/auth');
+        return;
+      }
+      setUser(session.user);
+      // Fetch user profile
+      fetchProfile(session.user.id);
+    });
+  }, [navigate]);
+
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return;
+    }
+
+    setProfile(data);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "See you next time!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditProfile = () => {
+    toast({
+      title: "Coming soon",
+      description: "This feature will be available soon!",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -28,13 +88,17 @@ const Profile = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-airbnb-dark mb-2">
-                  John Doe
+                  {profile?.name || user?.email}
                 </h1>
                 <p className="text-airbnb-light">
-                  Member since 2024
+                  Member since {new Date(user?.created_at || Date.now()).getFullYear()}
                 </p>
               </div>
-              <Button variant="outline" className="ml-auto">
+              <Button 
+                variant="outline" 
+                className="ml-auto"
+                onClick={handleEditProfile}
+              >
                 <Settings className="w-5 h-5 mr-2" />
                 Edit Profile
               </Button>
@@ -47,25 +111,29 @@ const Profile = () => {
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <ul className="space-y-4">
                   <li>
-                    <a href="#" className="flex items-center text-airbnb-dark hover:text-airbnb-primary">
+                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
                       <BookOpen className="w-5 h-5 mr-3" />
                       My Bookings
-                    </a>
+                    </Button>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center text-airbnb-dark hover:text-airbnb-primary">
+                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
                       <Home className="w-5 h-5 mr-3" />
                       My Listings
-                    </a>
+                    </Button>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center text-airbnb-dark hover:text-airbnb-primary">
+                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
                       <Heart className="w-5 h-5 mr-3" />
                       Saved
-                    </a>
+                    </Button>
                   </li>
                   <li>
-                    <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={handleLogout}
+                    >
                       <LogOut className="w-5 h-5 mr-3" />
                       Sign Out
                     </Button>
