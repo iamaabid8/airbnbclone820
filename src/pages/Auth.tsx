@@ -57,7 +57,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
+      <nav className="fixed top-0 w-full bg-white border-b px-6 py-4">
         <div className="container mx-auto">
           <Link to="/" className="text-airbnb-primary font-heading text-2xl font-bold">
             airbnb
