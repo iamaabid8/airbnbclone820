@@ -3,8 +3,9 @@ import { Users, Home, BookOpen, BarChart, Settings, Search } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { propertyAPI, userAPI, bookingAPI } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -18,21 +19,66 @@ const Admin = () => {
     revenue: 0,
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || profile.role !== 'admin') {
+        navigate('/');
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin panel",
+          variant: "destructive",
+        });
+      }
+    };
+
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (activeTab === "properties" || activeTab === "dashboard") {
-          const propertiesRes = await propertyAPI.getAll();
-          setProperties(propertiesRes.data);
+          const { data: propertiesData, error: propertiesError } = await supabase
+            .from('properties')
+            .select('*');
+          
+          if (propertiesError) throw propertiesError;
+          setProperties(propertiesData || []);
         }
+
         if (activeTab === "users" || activeTab === "dashboard") {
-          const usersRes = await userAPI.getAllUsers();
-          setUsers(usersRes.data);
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*');
+          
+          if (profilesError) throw profilesError;
+          setUsers(profilesData || []);
         }
+
         if (activeTab === "bookings" || activeTab === "dashboard") {
-          const bookingsRes = await bookingAPI.getAll();
-          setBookings(bookingsRes.data);
+          const { data: bookingsData, error: bookingsError } = await supabase
+            .from('bookings')
+            .select(`
+              *,
+              property:properties(*)
+            `);
+          
+          if (bookingsError) throw bookingsError;
+          setBookings(bookingsData || []);
         }
 
         if (activeTab === "dashboard") {
@@ -40,13 +86,14 @@ const Admin = () => {
             totalProperties: properties.length,
             activeUsers: users.length,
             totalBookings: bookings.length,
-            revenue: bookings.reduce((acc: number, booking: any) => acc + booking.price, 0),
+            revenue: bookings.reduce((acc: number, booking: any) => 
+              acc + Number(booking.total_price), 0),
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to fetch data. Please try again.",
+          description: "Failed to fetch data: " + error.message,
           variant: "destructive",
         });
       }
@@ -57,16 +104,22 @@ const Admin = () => {
 
   const handleDeleteProperty = async (id: string) => {
     try {
-      await propertyAPI.delete(id);
-      setProperties(properties.filter((prop: any) => prop._id !== id));
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setProperties(properties.filter((prop: any) => prop.id !== id));
       toast({
         title: "Success",
         description: "Property deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete property",
+        description: "Failed to delete property: " + error.message,
         variant: "destructive",
       });
     }
@@ -74,18 +127,24 @@ const Admin = () => {
 
   const handleSuspendUser = async (id: string) => {
     try {
-      await userAPI.updateUser(id, { suspended: true });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'suspended' })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
       setUsers(users.map((user: any) => 
-        user._id === id ? { ...user, suspended: true } : user
+        user.id === id ? { ...user, status: 'suspended' } : user
       ));
       toast({
         title: "Success",
         description: "User suspended successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to suspend user",
+        description: "Failed to suspend user: " + error.message,
         variant: "destructive",
       });
     }
@@ -103,7 +162,14 @@ const Admin = () => {
               <Settings className="w-5 h-5 mr-2" />
               Settings
             </Button>
-            <Button variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+            <Button 
+              variant="ghost" 
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate('/auth');
+              }}
+            >
               Logout
             </Button>
           </div>
@@ -188,14 +254,16 @@ const Admin = () => {
                 <h2 className="text-xl font-bold text-airbnb-dark mb-6">Recent Activity</h2>
                 <div className="space-y-4">
                   {bookings.slice(0, 5).map((booking: any) => (
-                    <div key={booking._id} className="flex items-center justify-between py-3 border-b last:border-0">
+                    <div key={booking.id} className="flex items-center justify-between py-3 border-b last:border-0">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-4">
                           <Users className="w-5 h-5 text-airbnb-primary" />
                         </div>
                         <div>
                           <p className="text-airbnb-dark font-medium">New booking received</p>
-                          <p className="text-airbnb-light text-sm">{new Date(booking.createdAt).toLocaleDateString()}</p>
+                          <p className="text-airbnb-light text-sm">
+                            {new Date(booking.created_at).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm">View</Button>
@@ -232,7 +300,7 @@ const Admin = () => {
 
                 <div className="space-y-4">
                   {properties.map((property: any) => (
-                    <div key={property._id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={property.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg mr-4">
                           <img
@@ -252,7 +320,7 @@ const Admin = () => {
                           variant="outline" 
                           size="sm" 
                           className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteProperty(property._id)}
+                          onClick={() => handleDeleteProperty(property.id)}
                         >
                           Delete
                         </Button>
@@ -281,11 +349,11 @@ const Admin = () => {
 
                 <div className="space-y-4">
                   {users.map((user: any) => (
-                    <div key={user._id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center">
                         <div className="w-12 h-12 bg-gray-200 rounded-full mr-4">
                           <img
-                            src={user.avatar || `https://i.pravatar.cc/150?u=${user._id}`}
+                            src={user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`}
                             alt={user.name}
                             className="w-full h-full object-cover rounded-full"
                           />
@@ -301,10 +369,10 @@ const Admin = () => {
                           variant="outline" 
                           size="sm" 
                           className="text-red-500 hover:text-red-600"
-                          onClick={() => handleSuspendUser(user._id)}
-                          disabled={user.suspended}
+                          onClick={() => handleSuspendUser(user.id)}
+                          disabled={user.status === 'suspended'}
                         >
-                          {user.suspended ? 'Suspended' : 'Suspend'}
+                          {user.status === 'suspended' ? 'Suspended' : 'Suspend'}
                         </Button>
                       </div>
                     </div>
@@ -335,19 +403,19 @@ const Admin = () => {
 
                 <div className="space-y-4">
                   {bookings.map((booking: any) => (
-                    <div key={booking._id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg mr-4">
                           <img
-                            src={booking.property?.images[0] || "https://via.placeholder.com/150"}
-                            alt={`Booking ${booking._id}`}
+                            src={booking.property?.images?.[0] || "https://via.placeholder.com/150"}
+                            alt={`Booking ${booking.id.slice(-6)}`}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-airbnb-dark">Booking #{booking._id.slice(-6)}</h3>
+                          <h3 className="font-semibold text-airbnb-dark">Booking #{booking.id.slice(-6)}</h3>
                           <p className="text-airbnb-light">
-                            Check-in: {new Date(booking.checkIn).toLocaleDateString()}
+                            Check-in: {new Date(booking.check_in).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
