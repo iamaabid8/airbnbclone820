@@ -1,11 +1,58 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        navigate("/");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+            },
+          },
+        });
+        if (error) throw error;
+        toast({
+          title: "Success!",
+          description: "Please check your email to verify your account.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -25,7 +72,7 @@ const Auth = () => {
               {isLogin ? "Welcome back" : "Create an account"}
             </h1>
 
-            <form className="space-y-6">
+            <form onSubmit={handleAuth} className="space-y-6">
               {!isLogin && (
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-airbnb-dark mb-2">
@@ -34,7 +81,10 @@ const Auth = () => {
                   <Input
                     id="name"
                     type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
+                    required={!isLogin}
                   />
                 </div>
               )}
@@ -46,7 +96,10 @@ const Auth = () => {
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  required
                 />
               </div>
 
@@ -57,12 +110,19 @@ const Auth = () => {
                 <Input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
                 />
               </div>
 
-              <Button className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white">
-                {isLogin ? "Sign In" : "Create Account"}
+              <Button 
+                type="submit" 
+                className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
               </Button>
             </form>
 
@@ -70,6 +130,7 @@ const Auth = () => {
               <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-airbnb-primary hover:underline"
+                type="button"
               >
                 {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
               </button>
