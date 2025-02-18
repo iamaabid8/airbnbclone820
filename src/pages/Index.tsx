@@ -1,9 +1,50 @@
 
-import { Search, MapPin, Calendar, User } from "lucide-react";
+import { Search, MapPin, Calendar, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check current auth status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "See you next time!",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen w-full">
       {/* Navigation */}
@@ -13,11 +54,28 @@ const Index = () => {
             airbnb
           </div>
           <div className="hidden md:flex items-center space-x-6">
-            <a href="#" className="nav-link">Become a Host</a>
-            <Button variant="ghost" className="nav-link">
-              <User className="w-5 h-5 mr-2" />
-              Sign In
-            </Button>
+            <Link to="/admin" className="nav-link">Become a Host</Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/profile">
+                  <Button variant="ghost" className="nav-link">
+                    <User className="w-5 h-5 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
+                <Button variant="ghost" className="nav-link" onClick={handleLogout}>
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" className="nav-link">
+                  <User className="w-5 h-5 mr-2" />
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
