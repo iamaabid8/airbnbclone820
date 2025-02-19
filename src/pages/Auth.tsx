@@ -31,8 +31,8 @@ const Auth = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        // Direct signup without email verification
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        // Sign up flow
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -40,24 +40,37 @@ const Auth = () => {
               name,
               role,
             },
-            // Skip email verification
-            emailRedirectTo: window.location.origin,
           },
         });
 
         if (signUpError) throw signUpError;
 
-        // Automatically sign in after signup
-        if (data.user) {
+        if (signUpData.user) {
+          // Sign in immediately after successful signup
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
-          if (signInError) throw signInError;
+
+          if (signInError) {
+            toast({
+              title: "Sign in failed",
+              description: "Account created but automatic sign in failed. Please try signing in manually.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          toast({
+            title: "Welcome!",
+            description: "Your account has been created successfully.",
+          });
+          
           navigate("/");
         }
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
         description: error.message,
