@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,15 +18,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/');
-      }
-    });
-  }, [navigate]);
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -40,7 +31,8 @@ const Auth = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Direct signup without email verification
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -48,14 +40,22 @@ const Auth = () => {
               name,
               role,
             },
+            // Skip email verification
+            emailRedirectTo: window.location.origin,
           },
         });
+
         if (signUpError) throw signUpError;
-        
-        toast({
-          title: "Success!",
-          description: "Please check your email to verify your account.",
-        });
+
+        // Automatically sign in after signup
+        if (data.user) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) throw signInError;
+          navigate("/");
+        }
       }
     } catch (error: any) {
       toast({
