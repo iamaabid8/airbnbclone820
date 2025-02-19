@@ -57,7 +57,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
-          role: string | null
+          role: string
           status: string | null
         }
         Insert: {
@@ -66,7 +66,7 @@ export type Database = {
           email?: string | null
           id: string
           name?: string | null
-          role?: string | null
+          role?: string
           status?: string | null
         }
         Update: {
@@ -75,7 +75,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
-          role?: string | null
+          role?: string
           status?: string | null
         }
         Relationships: []

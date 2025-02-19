@@ -43,6 +43,15 @@ const Profile = () => {
   }, [navigate]);
 
   useEffect(() => {
+    if (user) {
+      if (profile?.role === 'host') {
+        fetchProperties();
+      }
+      fetchBookings();
+    }
+  }, [user, profile]);
+
+  useEffect(() => {
     if (profile) {
       setEditForm({
         name: profile.name || "",
@@ -64,6 +73,37 @@ const Profile = () => {
     }
 
     setProfile(data);
+  };
+
+  const fetchProperties = async () => {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('owner_id', user.id);
+
+    if (error) {
+      console.error('Error fetching properties:', error);
+      return;
+    }
+
+    setProperties(data || []);
+  };
+
+  const fetchBookings = async () => {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        property:properties(*)
+      `)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error fetching bookings:', error);
+      return;
+    }
+
+    setBookings(data || []);
   };
 
   const handleUpdateProfile = async () => {
