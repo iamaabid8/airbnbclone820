@@ -5,13 +5,27 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    avatar_url: "",
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -29,13 +43,13 @@ const Profile = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (user) {
-      if (profile?.role === 'host') {
-        fetchProperties();
-      }
-      fetchBookings();
+    if (profile) {
+      setEditForm({
+        name: profile.name || "",
+        avatar_url: profile.avatar_url || "",
+      });
     }
-  }, [user, profile]);
+  }, [profile]);
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -52,35 +66,33 @@ const Profile = () => {
     setProfile(data);
   };
 
-  const fetchProperties = async () => {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('owner_id', user.id);
+  const handleUpdateProfile = async () => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: editForm.name,
+          avatar_url: editForm.avatar_url,
+        })
+        .eq('id', user.id);
 
-    if (error) {
-      console.error('Error fetching properties:', error);
-      return;
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+
+      // Refresh profile data
+      fetchProfile(user.id);
+      setIsEditing(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-
-    setProperties(data || []);
-  };
-
-  const fetchBookings = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        property:properties(*)
-      `)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error fetching bookings:', error);
-      return;
-    }
-
-    setBookings(data || []);
   };
 
   const handleLogout = async () => {
@@ -131,6 +143,50 @@ const Profile = () => {
                   {new Date(user?.created_at || Date.now()).getFullYear()}
                 </p>
               </div>
+              <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="ml-auto">
+                    <Settings className="w-5 h-5 mr-2" />
+                    Edit Profile
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Profile</DialogTitle>
+                    <DialogDescription>
+                      Make changes to your profile here. Click save when you're done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        placeholder="Your name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="avatar">Avatar URL</Label>
+                      <Input
+                        id="avatar"
+                        value={editForm.avatar_url}
+                        onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
+                        placeholder="https://example.com/avatar.jpg"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdateProfile}>
+                      Save Changes
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
