@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState("user");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,16 +40,18 @@ const Auth = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               name,
+              role,
             },
           },
         });
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+        
         toast({
           title: "Success!",
           description: "Please check your email to verify your account.",
@@ -64,9 +69,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white border-b px-6 py-4">
+      <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
         <div className="container mx-auto">
           <Link to="/" className="text-airbnb-primary font-heading text-2xl font-bold">
             airbnb
@@ -74,34 +79,30 @@ const Auth = () => {
         </div>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center pt-24 px-6">
+      <div className="flex-1 flex items-center justify-center pt-20">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h1 className="text-2xl font-bold text-airbnb-dark mb-6 text-center">
-              {isLogin ? "Welcome back" : "Create an account"}
-            </h1>
+          <div className="bg-white rounded-xl shadow-sm p-8">
+            <h2 className="text-2xl font-bold text-center mb-8">
+              {isLogin ? "Welcome back" : "Create your account"}
+            </h2>
 
             <form onSubmit={handleAuth} className="space-y-6">
               {!isLogin && (
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-airbnb-dark mb-2">
-                    Full Name
-                  </label>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
-                    required={!isLogin}
+                    required
                   />
                 </div>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-airbnb-dark mb-2">
-                  Email Address
-                </label>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -112,10 +113,8 @@ const Auth = () => {
                 />
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-airbnb-dark mb-2">
-                  Password
-                </label>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -126,24 +125,52 @@ const Auth = () => {
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white"
-                disabled={loading}
-              >
-                {loading ? "Loading..." : (isLogin ? "Sign In" : "Create Account")}
-              </Button>
-            </form>
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label>Account Type</Label>
+                  <RadioGroup defaultValue="user" onValueChange={setRole} className="flex space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="user" id="user" />
+                      <Label htmlFor="user">Guest</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="host" id="host" />
+                      <Label htmlFor="host">Host</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-airbnb-primary hover:underline"
-                type="button"
-              >
-                {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
-              </button>
-            </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+              </Button>
+
+              <div className="text-center text-sm text-gray-500">
+                {isLogin ? (
+                  <>
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(false)}
+                      className="text-airbnb-primary hover:underline"
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setIsLogin(true)}
+                      className="text-airbnb-primary hover:underline"
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
           </div>
         </div>
       </div>

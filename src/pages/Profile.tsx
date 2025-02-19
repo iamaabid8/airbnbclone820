@@ -1,14 +1,17 @@
 
-import { User, Settings, BookOpen, Home, Heart, LogOut } from "lucide-react";
+import { User, Settings, BookOpen, Home, Heart, LogOut, Plus, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -25,6 +28,15 @@ const Profile = () => {
     });
   }, [navigate]);
 
+  useEffect(() => {
+    if (user) {
+      if (profile?.role === 'host') {
+        fetchProperties();
+      }
+      fetchBookings();
+    }
+  }, [user, profile]);
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -38,6 +50,37 @@ const Profile = () => {
     }
 
     setProfile(data);
+  };
+
+  const fetchProperties = async () => {
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('owner_id', user.id);
+
+    if (error) {
+      console.error('Error fetching properties:', error);
+      return;
+    }
+
+    setProperties(data || []);
+  };
+
+  const fetchBookings = async () => {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        property:properties(*)
+      `)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error fetching bookings:', error);
+      return;
+    }
+
+    setBookings(data || []);
   };
 
   const handleLogout = async () => {
@@ -57,13 +100,6 @@ const Profile = () => {
     }
   };
 
-  const handleEditProfile = () => {
-    toast({
-      title: "Coming soon",
-      description: "This feature will be available soon!",
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -76,12 +112,12 @@ const Profile = () => {
       </nav>
 
       <div className="container mx-auto pt-32 px-6">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
             <div className="flex items-center space-x-6">
               <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1472396961693-142e6e269027"
+                  src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -91,17 +127,10 @@ const Profile = () => {
                   {profile?.name || user?.email}
                 </h1>
                 <p className="text-airbnb-light">
-                  Member since {new Date(user?.created_at || Date.now()).getFullYear()}
+                  {profile?.role === 'host' ? 'Host' : 'Guest'} • Member since{' '}
+                  {new Date(user?.created_at || Date.now()).getFullYear()}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                className="ml-auto"
-                onClick={handleEditProfile}
-              >
-                <Settings className="w-5 h-5 mr-2" />
-                Edit Profile
-              </Button>
             </div>
           </div>
 
@@ -110,24 +139,37 @@ const Profile = () => {
             <div className="md:col-span-1">
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <ul className="space-y-4">
-                  <li>
-                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
-                      <BookOpen className="w-5 h-5 mr-3" />
-                      My Bookings
-                    </Button>
-                  </li>
-                  <li>
-                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
-                      <Home className="w-5 h-5 mr-3" />
-                      My Listings
-                    </Button>
-                  </li>
-                  <li>
-                    <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
-                      <Heart className="w-5 h-5 mr-3" />
-                      Saved
-                    </Button>
-                  </li>
+                  {profile?.role === 'host' ? (
+                    <>
+                      <li>
+                        <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
+                          <Home className="w-5 h-5 mr-3" />
+                          My Properties
+                        </Button>
+                      </li>
+                      <li>
+                        <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
+                          <Calendar className="w-5 h-5 mr-3" />
+                          Reservations
+                        </Button>
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li>
+                        <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
+                          <BookOpen className="w-5 h-5 mr-3" />
+                          My Bookings
+                        </Button>
+                      </li>
+                      <li>
+                        <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
+                          <Heart className="w-5 h-5 mr-3" />
+                          Saved
+                        </Button>
+                      </li>
+                    </>
+                  )}
                   <li>
                     <Button 
                       variant="ghost" 
@@ -144,42 +186,93 @@ const Profile = () => {
 
             {/* Main Content */}
             <div className="md:col-span-3">
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-airbnb-dark mb-6">
-                  My Bookings
-                </h2>
-                
-                {/* Booking Cards */}
-                <div className="space-y-6">
-                  {[1, 2].map((booking) => (
-                    <div key={booking} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
-                        <img
-                          src={`https://images.unsplash.com/photo-${1649972904349 + booking}`}
-                          alt={`Booking ${booking}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
-                          Luxury Villa {booking}
-                        </h3>
-                        <p className="text-airbnb-light mb-4">
-                          Check-in: March {booking + 14}, 2024
-                          <br />
-                          Check-out: March {booking + 17}, 2024
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-airbnb-dark font-semibold">
-                            $299 per night
-                          </span>
-                          <Button variant="outline">View Details</Button>
+              {profile?.role === 'host' ? (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-airbnb-dark">
+                      My Properties
+                    </h2>
+                    <Button>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add Property
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {properties.map((property) => (
+                      <div key={property.id} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
+                          <img
+                            src={property.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994"}
+                            alt={property.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
+                            {property.title}
+                          </h3>
+                          <p className="text-airbnb-light mb-4 flex items-center">
+                            <MapPin className="w-4 h-4 mr-1" />
+                            {property.location}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-airbnb-dark font-semibold">
+                              ${property.price_per_night} per night
+                            </span>
+                            <Button variant="outline">Edit Property</Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <h2 className="text-xl font-bold text-airbnb-dark mb-6">
+                    My Bookings
+                  </h2>
+                  
+                  <div className="space-y-6">
+                    {bookings.map((booking) => (
+                      <div key={booking.id} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
+                          <img
+                            src={booking.property?.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994"}
+                            alt={booking.property?.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
+                            {booking.property?.title}
+                          </h3>
+                          <p className="text-airbnb-light mb-4">
+                            Check-in: {new Date(booking.check_in).toLocaleDateString()}
+                            <br />
+                            Check-out: {new Date(booking.check_out).toLocaleDateString()}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-airbnb-dark font-semibold">
+                              ${booking.total_price} total
+                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-3 py-1 rounded-full text-sm ${
+                                booking.status === 'confirmed' 
+                                  ? 'bg-green-100 text-green-600'
+                                  : 'bg-yellow-100 text-yellow-600'
+                              }`}>
+                                {booking.status}
+                              </span>
+                              <Button variant="outline">View Details</Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
