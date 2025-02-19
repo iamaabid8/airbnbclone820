@@ -24,12 +24,24 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Login flow
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
-        navigate("/");
+
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          throw signInError;
+        }
+
+        if (signInData.user) {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+          navigate("/");
+        }
       } else {
         // Sign up flow
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -43,7 +55,10 @@ const Auth = () => {
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          console.error('Sign up error:', signUpError);
+          throw signUpError;
+        }
 
         if (signUpData.user) {
           // Sign in immediately after successful signup
@@ -53,11 +68,13 @@ const Auth = () => {
           });
 
           if (signInError) {
+            console.error('Auto sign in error:', signInError);
             toast({
               title: "Sign in failed",
               description: "Account created but automatic sign in failed. Please try signing in manually.",
               variant: "destructive",
             });
+            setIsLogin(true);
             return;
           }
 
