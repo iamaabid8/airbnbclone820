@@ -1,3 +1,4 @@
+
 import { Search, MapPin, Calendar, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -7,13 +8,31 @@ import { useToast } from "@/components/ui/use-toast";
 import { PropertySearch, type PropertyFilters } from "@/components/PropertySearch";
 import { useQuery } from "@tanstack/react-query";
 
+type Property = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string;
+  images: string[] | null;
+  owner_id: string | null;
+  created_at: string;
+  price_per_night: number;
+  property_type: string;
+  bedrooms: number;
+  bathrooms: number;
+  max_guests: number;
+  amenities: string[];
+  rating: number;
+  total_ratings: number;
+};
+
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [filters, setFilters] = useState<PropertyFilters | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties, isLoading } = useQuery<Property[]>({
     queryKey: ['properties', filters],
     queryFn: async () => {
       let query = supabase
@@ -43,14 +62,11 @@ const Index = () => {
         if (filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
         }
-
-        // Note: booking date filtering would require a more complex query
-        // involving the bookings table
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data as Property[];
     },
     enabled: true,
   });
@@ -137,7 +153,6 @@ const Index = () => {
             Search low prices on hotels, homes, and much more...
           </p>
           
-          {/* Search Bar */}
           <PropertySearch onSearch={handleSearch} />
         </div>
       </section>

@@ -82,31 +82,55 @@ export type Database = {
       }
       properties: {
         Row: {
+          amenities: string[] | null
+          bathrooms: number
+          bedrooms: number
           created_at: string
           description: string | null
           id: string
           images: string[] | null
           location: string
+          max_guests: number
           owner_id: string | null
+          price_per_night: number
+          property_type: string
+          rating: number | null
           title: string
+          total_ratings: number | null
         }
         Insert: {
+          amenities?: string[] | null
+          bathrooms?: number
+          bedrooms?: number
           created_at?: string
           description?: string | null
           id?: string
           images?: string[] | null
           location: string
+          max_guests?: number
           owner_id?: string | null
+          price_per_night?: number
+          property_type?: string
+          rating?: number | null
           title: string
+          total_ratings?: number | null
         }
         Update: {
+          amenities?: string[] | null
+          bathrooms?: number
+          bedrooms?: number
           created_at?: string
           description?: string | null
           id?: string
           images?: string[] | null
           location?: string
+          max_guests?: number
           owner_id?: string | null
+          price_per_night?: number
+          property_type?: string
+          rating?: number | null
           title?: string
+          total_ratings?: number | null
         }
         Relationships: []
       }

@@ -8,11 +8,11 @@ import {
   SIDEBAR_KEYBOARD_SHORTCUT,
   SIDEBAR_WIDTH,
   SIDEBAR_WIDTH_ICON,
-  type SidebarContext,
+  type SidebarContextType,
   type SidebarProviderProps 
 } from "./types"
 
-export const SidebarContext = React.createContext<SidebarContext | null>(null)
+export const SidebarContext = React.createContext<SidebarContextType | null>(null)
 
 export function useSidebar() {
   const context = React.useContext(SidebarContext)
@@ -77,7 +77,7 @@ export const SidebarProvider = React.forwardRef<
     }, [toggleSidebar])
 
     const state = open ? "expanded" : "collapsed"
-    const contextValue = React.useMemo<SidebarContext>(
+    const contextValue = React.useMemo<SidebarContextType>(
       () => ({
         state,
         open,
