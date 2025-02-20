@@ -1,16 +1,59 @@
-
 import { Search, MapPin, Calendar, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { PropertySearch, type PropertyFilters } from "@/components/PropertySearch";
+import { useQuery } from "@tanstack/react-query";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
+  const [filters, setFilters] = useState<PropertyFilters | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const { data: properties, isLoading } = useQuery({
+    queryKey: ['properties', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('properties')
+        .select('*');
+
+      if (filters) {
+        // Apply filters
+        if (filters.location) {
+          query = query.ilike('location', `%${filters.location}%`);
+        }
+
+        if (filters.propertyType) {
+          query = query.eq('property_type', filters.propertyType);
+        }
+
+        if (filters.priceRange) {
+          query = query
+            .gte('price_per_night', filters.priceRange[0])
+            .lte('price_per_night', filters.priceRange[1]);
+        }
+
+        if (filters.minRating > 0) {
+          query = query.gte('rating', filters.minRating);
+        }
+
+        if (filters.amenities.length > 0) {
+          query = query.contains('amenities', filters.amenities);
+        }
+
+        // Note: booking date filtering would require a more complex query
+        // involving the bookings table
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+    enabled: true,
+  });
 
   useEffect(() => {
     // Check current auth status
@@ -43,6 +86,10 @@ const Index = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSearch = (newFilters: PropertyFilters) => {
+    setFilters(newFilters);
   };
 
   return (
@@ -91,82 +138,65 @@ const Index = () => {
           </p>
           
           {/* Search Bar */}
-          <div className="search-bar max-w-4xl mx-auto rounded-full p-2 flex flex-col md:flex-row items-center gap-4">
-            <div className="flex-1 flex items-center px-4">
-              <MapPin className="w-5 h-5 text-airbnb-primary mr-2" />
-              <Input 
-                type="text" 
-                placeholder="Where are you going?"
-                className="border-none focus-visible:ring-0"
-              />
-            </div>
-            <div className="w-px h-8 bg-gray-200 hidden md:block" />
-            <div className="flex-1 flex items-center px-4">
-              <Calendar className="w-5 h-5 text-airbnb-primary mr-2" />
-              <Input 
-                type="text" 
-                placeholder="Check-in - Check-out"
-                className="border-none focus-visible:ring-0"
-              />
-            </div>
-            <div className="w-px h-8 bg-gray-200 hidden md:block" />
-            <div className="flex-1 flex items-center px-4">
-              <User className="w-5 h-5 text-airbnb-primary mr-2" />
-              <Input 
-                type="text" 
-                placeholder="Guests"
-                className="border-none focus-visible:ring-0"
-              />
-            </div>
-            <Button className="w-full md:w-auto bg-airbnb-primary hover:bg-airbnb-primary/90 text-white rounded-full px-8">
-              <Search className="w-5 h-5 mr-2" />
-              Search
-            </Button>
-          </div>
+          <PropertySearch onSearch={handleSearch} />
         </div>
       </section>
 
-      {/* Featured Properties */}
+      {/* Properties Grid */}
       <section className="py-20 px-6 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
-            Featured places to stay
+            {filters ? 'Search Results' : 'Featured places to stay'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="property-card rounded-xl overflow-hidden bg-white">
-                <div className="aspect-video bg-gray-200 relative">
-                  <img
-                    src={`https://images.unsplash.com/photo-1649972904349-6e44c42644a7`}
-                    alt="Property"
-                    className="w-full h-full object-cover"
-                  />
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="animate-pulse">
+                  <div className="aspect-video bg-gray-200 rounded-xl mb-4" />
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
                 </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-airbnb-dark mb-2">
-                        Luxury Villa
-                      </h3>
-                      <p className="text-airbnb-light">New York, USA</p>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {properties?.map((property) => (
+                <div key={property.id} className="property-card rounded-xl overflow-hidden bg-white">
+                  <div className="aspect-video bg-gray-200 relative">
+                    <img
+                      src={property.images?.[0] || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"}
+                      alt={property.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-airbnb-dark mb-2">
+                          {property.title}
+                        </h3>
+                        <p className="text-airbnb-light">{property.location}</p>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-yellow-400 mr-1">★</span>
+                        <span className="text-airbnb-dark">{property.rating || "New"}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className="text-yellow-400 mr-1">★</span>
-                      <span className="text-airbnb-dark">4.9</span>
+                    <div className="flex justify-between items-center">
+                      <p className="text-airbnb-dark">
+                        <span className="font-semibold">${property.price_per_night}</span> / night
+                      </p>
+                      <Link to={`/property/${property.id}`}>
+                        <Button variant="outline" className="hover:bg-airbnb-primary hover:text-white transition-colors">
+                          View Details
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-airbnb-dark">
-                      <span className="font-semibold">$299</span> / night
-                    </p>
-                    <Button variant="outline" className="hover:bg-airbnb-primary hover:text-white transition-colors">
-                      View Details
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
