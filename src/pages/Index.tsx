@@ -1,5 +1,4 @@
-
-import { Search, MapPin, Calendar, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { PropertySearch, type PropertyFilters } from "@/components/PropertySearch";
 import { useQuery } from "@tanstack/react-query";
+import { PropertyCard } from "@/components/PropertyCard";
 
 type Property = {
   id: string;
@@ -40,25 +40,20 @@ const Index = () => {
         .select('*');
 
       if (filters) {
-        // Apply filters
         if (filters.location) {
           query = query.ilike('location', `%${filters.location}%`);
         }
-
         if (filters.propertyType) {
           query = query.eq('property_type', filters.propertyType);
         }
-
         if (filters.priceRange) {
           query = query
             .gte('price_per_night', filters.priceRange[0])
             .lte('price_per_night', filters.priceRange[1]);
         }
-
         if (filters.minRating > 0) {
           query = query.gte('rating', filters.minRating);
         }
-
         if (filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
         }
@@ -72,12 +67,10 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Check current auth status
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -110,7 +103,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full">
-      {/* Navigation */}
       <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <div className="text-airbnb-primary font-heading text-2xl font-bold">
@@ -143,21 +135,19 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="pt-32 pb-20 px-6">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-airbnb-dark">
-            Find your next stay
+            Discover Your Perfect Getaway
           </h1>
           <p className="text-lg md:text-xl text-airbnb-light mb-12 max-w-2xl mx-auto">
-            Search low prices on hotels, homes, and much more...
+            Explore unique homes and experiences around the world
           </p>
           
           <PropertySearch onSearch={handleSearch} />
         </div>
       </section>
 
-      {/* Properties Grid */}
       <section className="py-20 px-6 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
@@ -176,46 +166,13 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {properties?.map((property) => (
-                <div key={property.id} className="property-card rounded-xl overflow-hidden bg-white">
-                  <div className="aspect-video bg-gray-200 relative">
-                    <img
-                      src={property.images?.[0] || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"}
-                      alt={property.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-airbnb-dark mb-2">
-                          {property.title}
-                        </h3>
-                        <p className="text-airbnb-light">{property.location}</p>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-yellow-400 mr-1">★</span>
-                        <span className="text-airbnb-dark">{property.rating || "New"}</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-airbnb-dark">
-                        <span className="font-semibold">${property.price_per_night}</span> / night
-                      </p>
-                      <Link to={`/property/${property.id}`}>
-                        <Button variant="outline" className="hover:bg-airbnb-primary hover:text-white transition-colors">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <PropertyCard key={property.id} property={property} />
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* Categories */}
       <section className="py-20 px-6">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
@@ -240,7 +197,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-100 py-20 px-6">
         <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
           <div>
