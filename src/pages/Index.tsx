@@ -1,4 +1,4 @@
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,11 +26,19 @@ type Property = {
   total_ratings: number;
 };
 
+const fallbackImages = {
+  "Beach Houses": "/beach-house-default.jpg",
+  "Mountain Cabins": "/mountain-cabin-default.jpg",
+  "Luxury Villas": "/luxury-villa-default.jpg",
+  "City Apartments": "/city-apartment-default.jpg",
+  default: "https://placehold.co/600x400/png?text=Property"
+};
+
 const categoryImages = {
-  "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
-  "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
-  "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
-  "City Apartments": "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
+  "Beach Houses": "https://placehold.co/600x400/png?text=Beach+Houses",
+  "Mountain Cabins": "https://placehold.co/600x400/png?text=Mountain+Cabins",
+  "Luxury Villas": "https://placehold.co/600x400/png?text=Luxury+Villas",
+  "City Apartments": "https://placehold.co/600x400/png?text=City+Apartments"
 };
 
 const Index = () => {
@@ -114,6 +122,10 @@ const Index = () => {
     setSelectedCategory(null);
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = fallbackImages.default;
+  };
+
   return (
     <div className="min-h-screen w-full">
       <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
@@ -176,10 +188,11 @@ const Index = () => {
                   setFilters(null);
                 }}
               >
-                <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden">
+                <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden relative">
                   <img
                     src={image}
                     alt={category}
+                    onError={handleImageError}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                 </div>
@@ -209,11 +222,16 @@ const Index = () => {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : properties && properties.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {properties?.map((property) => (
+              {properties.map((property) => (
                 <PropertyCard key={property.id} property={property} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <ImageOff className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-lg text-gray-600">No properties found</p>
             </div>
           )}
         </div>

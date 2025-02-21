@@ -1,6 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ImageOff } from "lucide-react";
 
 type Property = {
   id: string;
@@ -16,18 +17,29 @@ type Property = {
 };
 
 export const PropertyCard = ({ property }: { property: Property }) => {
-  // Convert USD to INR (approximately)
-  const priceInRupees = Math.round(property.price_per_night * 83); // Using approximate conversion rate
+  const priceInRupees = Math.round(property.price_per_night * 83);
+  const fallbackImage = "https://placehold.co/600x400/png?text=Property";
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = fallbackImage;
+  };
 
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="aspect-video bg-gray-200 relative">
-        <img
-          src={property.images?.[0] || "https://images.unsplash.com/photo-1487958449943-2429e8be8625"}
-          alt={property.title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        {property.images?.[0] ? (
+          <img
+            src={property.images[0]}
+            alt={property.title}
+            className="w-full h-full object-cover"
+            onError={handleImageError}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <ImageOff className="w-8 h-8 text-gray-400" />
+          </div>
+        )}
         <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark">
           {property.property_type}
         </div>
