@@ -2,18 +2,18 @@
 import { ImageOff } from "lucide-react";
 
 const fallbackImages = {
-  "Beach Houses": "/beach-house-default.jpg",
-  "Mountain Cabins": "/mountain-cabin-default.jpg",
-  "Luxury Villas": "/luxury-villa-default.jpg",
-  "City Apartments": "/city-apartment-default.jpg",
-  default: "https://placehold.co/600x400/png?text=Property"
+  "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
+  "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
+  "City Apartments": "https://images.unsplash.com/photo-1721322800607-8c38375eef04",
+  default: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
 };
 
 const categoryImages = {
-  "Beach Houses": "https://placehold.co/600x400/png?text=Beach+Houses",
-  "Mountain Cabins": "https://placehold.co/600x400/png?text=Mountain+Cabins",
-  "Luxury Villas": "https://placehold.co/600x400/png?text=Luxury+Villas",
-  "City Apartments": "https://placehold.co/600x400/png?text=City+Apartments"
+  "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
+  "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
+  "City Apartments": "https://images.unsplash.com/photo-1721322800607-8c38375eef04"
 };
 
 interface CategoriesProps {

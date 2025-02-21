@@ -18,28 +18,24 @@ type Property = {
 
 export const PropertyCard = ({ property }: { property: Property }) => {
   const priceInRupees = Math.round(property.price_per_night * 83);
-  const fallbackImage = "https://placehold.co/600x400/png?text=Property";
+  const defaultImage = "https://images.unsplash.com/photo-1487958449943-2429e8be8625";
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = fallbackImage;
+    e.currentTarget.src = defaultImage;
   };
+
+  const imageUrl = property.images?.[0] || defaultImage;
 
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="aspect-video bg-gray-200 relative">
-        {property.images?.[0] ? (
-          <img
-            src={property.images[0]}
-            alt={property.title}
-            className="w-full h-full object-cover"
-            onError={handleImageError}
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <ImageOff className="w-8 h-8 text-gray-400" />
-          </div>
-        )}
+        <img
+          src={imageUrl}
+          alt={property.title}
+          className="w-full h-full object-cover"
+          onError={handleImageError}
+          loading="lazy"
+        />
         <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark">
           {property.property_type}
         </div>
