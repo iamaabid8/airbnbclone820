@@ -12,6 +12,7 @@ type Property = {
   rating: number;
   total_ratings: number;
   amenities: string[];
+  property_type: string;
 };
 
 export const PropertyCard = ({ property }: { property: Property }) => {
@@ -22,10 +23,14 @@ export const PropertyCard = ({ property }: { property: Property }) => {
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="aspect-video bg-gray-200 relative">
         <img
-          src={property.images?.[0] || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"}
+          src={property.images?.[0] || "https://images.unsplash.com/photo-1487958449943-2429e8be8625"}
           alt={property.title}
           className="w-full h-full object-cover"
+          loading="lazy"
         />
+        <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark">
+          {property.property_type}
+        </div>
       </div>
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">

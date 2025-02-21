@@ -26,14 +26,22 @@ type Property = {
   total_ratings: number;
 };
 
+const categoryImages = {
+  "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+  "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
+  "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
+  "City Apartments": "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"
+};
+
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [filters, setFilters] = useState<PropertyFilters | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const { data: properties, isLoading } = useQuery<Property[]>({
-    queryKey: ['properties', filters],
+    queryKey: ['properties', filters, selectedCategory],
     queryFn: async () => {
       let query = supabase
         .from('properties')
@@ -57,6 +65,10 @@ const Index = () => {
         if (filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
         }
+      }
+
+      if (selectedCategory) {
+        query = query.eq('property_type', selectedCategory);
       }
 
       const { data, error } = await query;
@@ -99,6 +111,7 @@ const Index = () => {
 
   const handleSearch = (newFilters: PropertyFilters) => {
     setFilters(newFilters);
+    setSelectedCategory(null);
   };
 
   return (
@@ -148,10 +161,43 @@ const Index = () => {
         </div>
       </section>
 
+      <section className="py-20 px-6">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold text-airbnb-dark mb-8">
+            Browse by property type
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {Object.entries(categoryImages).map(([category, image]) => (
+              <div
+                key={category}
+                className="group cursor-pointer"
+                onClick={() => {
+                  setSelectedCategory(category);
+                  setFilters(null);
+                }}
+              >
+                <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden">
+                  <img
+                    src={image}
+                    alt={category}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+                <h3 className={`text-lg font-semibold text-center ${
+                  selectedCategory === category ? 'text-airbnb-primary' : 'text-airbnb-dark'
+                }`}>
+                  {category}
+                </h3>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-20 px-6 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
-            {filters ? 'Search Results' : 'Featured places to stay'}
+            {filters ? 'Search Results' : selectedCategory ? `${selectedCategory}` : 'Featured places to stay'}
           </h2>
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -170,30 +216,6 @@ const Index = () => {
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="py-20 px-6">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
-            Browse by category
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {['Beach Houses', 'Mountain Cabins', 'Luxury Villas', 'City Apartments'].map((category) => (
-              <div key={category} className="group cursor-pointer">
-                <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden">
-                  <img
-                    src={`https://images.unsplash.com/photo-1721322800607-8c38375eef04`}
-                    alt={category}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                </div>
-                <h3 className="text-lg font-semibold text-airbnb-dark text-center">
-                  {category}
-                </h3>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
