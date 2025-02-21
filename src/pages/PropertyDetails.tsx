@@ -1,18 +1,21 @@
 
 import { MapPin, Calendar, User, Star, Share2, Heart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { format, addDays, differenceInDays } from "date-fns";
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const [guests, setGuests] = useState(1);
   const [dates, setDates] = useState({ checkIn: "", checkOut: "" });
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: property, isLoading } = useQuery({
     queryKey: ['property', id],
@@ -28,7 +31,59 @@ const PropertyDetails = () => {
     },
   });
 
-  const handleBooking = () => {
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    },
+  });
+
+  const bookingMutation = useMutation({
+    mutationFn: async (bookingData: {
+      property_id: string;
+      check_in: string;
+      check_out: string;
+      total_price: number;
+      user_id: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([bookingData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      toast({
+        title: "Booking confirmed!",
+        description: "Your reservation has been successfully made.",
+      });
+      navigate('/profile');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Booking failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBooking = async () => {
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to make a booking",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+
     if (!dates.checkIn || !dates.checkOut) {
       toast({
         title: "Select dates",
@@ -38,11 +93,37 @@ const PropertyDetails = () => {
       return;
     }
 
-    toast({
-      title: "Booking initiated",
-      description: "We'll redirect you to complete your booking",
+    const checkInDate = new Date(dates.checkIn);
+    const checkOutDate = new Date(dates.checkOut);
+    
+    if (checkInDate <= new Date()) {
+      toast({
+        title: "Invalid dates",
+        description: "Check-in date must be in the future",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (checkOutDate <= checkInDate) {
+      toast({
+        title: "Invalid dates",
+        description: "Check-out date must be after check-in date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const numberOfNights = differenceInDays(checkOutDate, checkInDate);
+    const totalPrice = numberOfNights * property.price_per_night;
+
+    bookingMutation.mutate({
+      property_id: property.id,
+      check_in: dates.checkIn,
+      check_out: dates.checkOut,
+      total_price: totalPrice,
+      user_id: session.user.id,
     });
-    // Add booking logic here
   };
 
   if (isLoading) {
@@ -77,6 +158,9 @@ const PropertyDetails = () => {
   }
 
   const priceInRupees = Math.round(property.price_per_night * 83);
+
+  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  const dayAfterTomorrow = format(addDays(new Date(), 2), 'yyyy-MM-dd');
 
   return (
     <div className="min-h-screen">
@@ -179,7 +263,7 @@ const PropertyDetails = () => {
                   <Calendar className="w-5 h-5 text-airbnb-primary mr-2" />
                   <Input
                     type="date"
-                    placeholder="Check-in"
+                    min={tomorrow}
                     value={dates.checkIn}
                     onChange={(e) => setDates({ ...dates, checkIn: e.target.value })}
                     className="border-none focus:outline-none"
@@ -189,7 +273,7 @@ const PropertyDetails = () => {
                   <Calendar className="w-5 h-5 text-airbnb-primary mr-2" />
                   <Input
                     type="date"
-                    placeholder="Check-out"
+                    min={dates.checkIn || tomorrow}
                     value={dates.checkOut}
                     onChange={(e) => setDates({ ...dates, checkOut: e.target.value })}
                     className="border-none focus:outline-none"
@@ -200,6 +284,7 @@ const PropertyDetails = () => {
                   <Input
                     type="number"
                     min="1"
+                    max={property.max_guests}
                     value={guests}
                     onChange={(e) => setGuests(parseInt(e.target.value))}
                     className="border-none focus:outline-none"
@@ -208,11 +293,25 @@ const PropertyDetails = () => {
                 </div>
               </div>
 
+              {dates.checkIn && dates.checkOut && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between mb-2">
+                    <span>₹{priceInRupees} × {differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))} nights</span>
+                    <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              )}
+
               <Button 
                 className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white"
                 onClick={handleBooking}
+                disabled={bookingMutation.isPending}
               >
-                Reserve Now
+                {bookingMutation.isPending ? "Confirming..." : "Reserve Now"}
               </Button>
             </div>
           </div>
