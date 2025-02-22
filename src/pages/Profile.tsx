@@ -1,4 +1,3 @@
-
 import { User, Settings, BookOpen, Home, Heart, LogOut, Plus, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,6 +14,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
@@ -30,14 +40,12 @@ const Profile = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         navigate('/auth');
         return;
       }
       setUser(session.user);
-      // Fetch user profile
       fetchProfile(session.user.id);
     });
   }, [navigate]);
@@ -123,7 +131,6 @@ const Profile = () => {
         description: "Your profile has been updated successfully.",
       });
 
-      // Refresh profile data
       fetchProfile(user.id);
       setIsEditing(false);
     } catch (error: any) {
@@ -152,9 +159,32 @@ const Profile = () => {
     }
   };
 
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Booking cancelled",
+        description: "Your booking has been cancelled successfully.",
+      });
+
+      fetchBookings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
       <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <Link to="/" className="text-airbnb-primary font-heading text-2xl font-bold">
@@ -231,7 +261,6 @@ const Profile = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Sidebar */}
             <div className="md:col-span-1">
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <ul className="space-y-4">
@@ -280,7 +309,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Main Content */}
             <div className="md:col-span-3">
               {profile?.role === 'host' ? (
                 <div className="bg-white rounded-xl shadow-sm p-6">
@@ -356,10 +384,38 @@ const Profile = () => {
                               <span className={`px-3 py-1 rounded-full text-sm ${
                                 booking.status === 'confirmed' 
                                   ? 'bg-green-100 text-green-600'
+                                  : booking.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-600'
                                   : 'bg-yellow-100 text-yellow-600'
                               }`}>
                                 {booking.status}
                               </span>
+                              {booking.status !== 'cancelled' && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                                      Cancel
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to cancel this booking? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleCancelBooking(booking.id)}
+                                        className="bg-red-500 hover:bg-red-600"
+                                      >
+                                        Cancel Booking
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                               <Button variant="outline">View Details</Button>
                             </div>
                           </div>
