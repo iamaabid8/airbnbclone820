@@ -34,9 +34,10 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: properties, isLoading } = useQuery<Property[]>({
+  const { data: properties, isLoading } = useQuery({
     queryKey: ['properties', filters, selectedCategory],
     queryFn: async () => {
+      console.log("Fetching properties with filters:", filters);
       let query = supabase
         .from('properties')
         .select('*');
@@ -66,10 +67,12 @@ const Index = () => {
       }
 
       const { data, error } = await query;
+      
+      console.log("Supabase response:", { data, error });
+      
       if (error) throw error;
       return data as Property[];
     },
-    enabled: true,
   });
 
   useEffect(() => {
