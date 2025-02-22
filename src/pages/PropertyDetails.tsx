@@ -1,4 +1,3 @@
-
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,18 +18,27 @@ const PropertyDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: property, isLoading } = useQuery({
+  console.log("Current property ID:", id); // Debug log
+
+  const { data: property, isLoading, error } = useQuery({
     queryKey: ['property', id],
     queryFn: async () => {
+      console.log("Fetching property with ID:", id); // Debug log
       const { data, error } = await supabase
         .from('properties')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      console.log("Supabase response:", { data, error }); // Debug log
+
+      if (error) {
+        console.error("Supabase error:", error); // Debug log
+        throw error;
+      }
       return data;
     },
+    enabled: !!id, // Only run query if we have an ID
   });
 
   const { data: session } = useQuery({
@@ -129,6 +137,7 @@ const PropertyDetails = () => {
   };
 
   if (isLoading) {
+    console.log("Loading state..."); // Debug log
     return (
       <div className="min-h-screen pt-24 px-6">
         <div className="container mx-auto animate-pulse">
@@ -146,11 +155,17 @@ const PropertyDetails = () => {
     );
   }
 
+  if (error) {
+    console.error("Error state:", error); // Debug log
+  }
+
   if (!property) {
+    console.log("No property found for ID:", id); // Debug log
     return (
       <div className="min-h-screen pt-24 px-6">
         <div className="container mx-auto text-center">
           <h1 className="text-2xl font-bold text-airbnb-dark">Property not found</h1>
+          <p className="text-airbnb-light mt-2">The property you're looking for could not be found.</p>
           <Link to="/" className="text-airbnb-primary hover:underline mt-4 inline-block">
             Return to home
           </Link>
