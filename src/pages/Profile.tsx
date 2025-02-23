@@ -1,3 +1,4 @@
+
 import { User, Settings, BookOpen, Home, Heart, LogOut, Plus, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -104,7 +105,8 @@ const Profile = () => {
         *,
         property:properties(*)
       `)
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .neq('status', 'cancelled'); // Only fetch non-cancelled bookings
 
     if (error) {
       console.error('Error fetching bookings:', error);

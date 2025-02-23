@@ -15,6 +15,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -116,17 +127,25 @@ const Admin = () => {
 
   const handleDeleteProperty = async (id: string) => {
     try {
-      const { error } = await supabase
+      const { error: bookingsError } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('property_id', id);
+      
+      if (bookingsError) throw bookingsError;
+
+      const { error: propertyError } = await supabase
         .from('properties')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (propertyError) throw propertyError;
       
       setProperties(properties.filter((prop: any) => prop.id !== id));
+      
       toast({
         title: "Success",
-        description: "Property deleted successfully",
+        description: "Property and related bookings deleted successfully",
       });
     } catch (error: any) {
       toast({
@@ -372,14 +391,34 @@ const Admin = () => {
                         >
                           Edit
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => handleDeleteProperty(property.id)}
-                        >
-                          Delete
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Property</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this property? This will also remove all related bookings. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteProperty(property.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete Property
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ))}
