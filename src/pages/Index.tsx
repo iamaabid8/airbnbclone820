@@ -40,7 +40,8 @@ const Index = () => {
       console.log("Fetching properties with filters:", filters);
       let query = supabase
         .from('properties')
-        .select('*');
+        .select('*')
+        .gt('price_per_night', 0); // Filter out properties with price 0
 
       if (filters) {
         if (filters.location) {
