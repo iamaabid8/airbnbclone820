@@ -16,7 +16,7 @@ export const Navigation = ({ user, onLogout }: NavigationProps) => {
           airbnb
         </div>
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/admin" className="nav-link">Become a Host</Link>
+          <Link to="/host" className="nav-link">Become a Host</Link>
           {user ? (
             <div className="flex items-center space-x-4">
               <Link to="/profile">
