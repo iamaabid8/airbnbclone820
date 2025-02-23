@@ -6,6 +6,15 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -20,6 +29,9 @@ const Admin = () => {
   });
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<any>(null);
+  const [newPrice, setNewPrice] = useState("");
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -145,6 +157,43 @@ const Admin = () => {
       toast({
         title: "Error",
         description: "Failed to suspend user: " + error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditProperty = (property: any) => {
+    setEditingProperty(property);
+    setNewPrice(property.price_per_night.toString());
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .update({ price_per_night: parseFloat(newPrice) })
+        .eq('id', editingProperty.id);
+
+      if (error) throw error;
+
+      setProperties(properties.map((prop: any) => 
+        prop.id === editingProperty.id 
+          ? { ...prop, price_per_night: parseFloat(newPrice) }
+          : prop
+      ));
+
+      setIsEditDialogOpen(false);
+      setEditingProperty(null);
+      
+      toast({
+        title: "Success",
+        description: "Property price updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update property: " + error.message,
         variant: "destructive",
       });
     }
@@ -304,7 +353,7 @@ const Admin = () => {
                       <div className="flex items-center">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg mr-4">
                           <img
-                            src={property.images[0] || "https://via.placeholder.com/150"}
+                            src={property.images?.[0] || "https://via.placeholder.com/150"}
                             alt={property.title}
                             className="w-full h-full object-cover rounded-lg"
                           />
@@ -312,10 +361,17 @@ const Admin = () => {
                         <div>
                           <h3 className="font-semibold text-airbnb-dark">{property.title}</h3>
                           <p className="text-airbnb-light">{property.location}</p>
+                          <p className="text-airbnb-primary font-medium">₹{property.price_per_night}/night</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">Edit</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditProperty(property)}
+                        >
+                          Edit
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -437,6 +493,39 @@ const Admin = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Property</DialogTitle>
+            <DialogDescription>
+              Update the property details below
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="price">Price per night</Label>
+              <Input
+                id="price"
+                type="number"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                placeholder="Enter price per night"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
