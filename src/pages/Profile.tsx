@@ -1,4 +1,3 @@
-
 import { User, Settings, BookOpen, Home, Heart, LogOut, Plus, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -32,6 +31,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [properties, setProperties] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [savedProperties, setSavedProperties] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -48,6 +48,7 @@ const Profile = () => {
       }
       setUser(session.user);
       fetchProfile(session.user.id);
+      fetchSavedProperties(session.user.id);
     });
   }, [navigate]);
 
@@ -84,36 +85,78 @@ const Profile = () => {
     setProfile(data);
   };
 
-  const fetchProperties = async () => {
+  const fetchSavedProperties = async (userId: string) => {
     const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('owner_id', user.id);
+      .from('saved_properties')
+      .select('property_id')
+      .eq('user_id', userId);
 
     if (error) {
-      console.error('Error fetching properties:', error);
+      console.error('Error fetching saved properties:', error);
       return;
     }
 
-    setProperties(data || []);
+    const propertyIds = data.map(item => item.property_id);
+    
+    if (propertyIds.length > 0) {
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', propertyIds);
+
+      if (propertiesError) {
+        console.error('Error fetching property details:', propertiesError);
+        return;
+      }
+
+      setSavedProperties(properties || []);
+    }
   };
 
-  const fetchBookings = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        property:properties(*)
-      `)
-      .eq('user_id', user.id)
-      .neq('status', 'cancelled'); // Only fetch non-cancelled bookings
+  const handleSaveProperty = async (propertyId: string) => {
+    const { error } = await supabase
+      .from('saved_properties')
+      .insert([
+        { user_id: user.id, property_id: propertyId }
+      ]);
 
     if (error) {
-      console.error('Error fetching bookings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save property",
+        variant: "destructive",
+      });
       return;
     }
 
-    setBookings(data || []);
+    toast({
+      title: "Success",
+      description: "Property saved successfully",
+    });
+    fetchSavedProperties(user.id);
+  };
+
+  const handleUnsaveProperty = async (propertyId: string) => {
+    const { error } = await supabase
+      .from('saved_properties')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('property_id', propertyId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to unsave property",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Property removed from saved list",
+    });
+    fetchSavedProperties(user.id);
   };
 
   const handleUpdateProfile = async () => {
@@ -292,7 +335,7 @@ const Profile = () => {
                       <li>
                         <Button variant="ghost" className="w-full justify-start text-airbnb-dark hover:text-airbnb-primary">
                           <Heart className="w-5 h-5 mr-3" />
-                          Saved
+                          Saved ({savedProperties.length})
                         </Button>
                       </li>
                     </>
@@ -354,78 +397,135 @@ const Profile = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h2 className="text-xl font-bold text-airbnb-dark mb-6">
-                    My Bookings
-                  </h2>
-                  
-                  <div className="space-y-6">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
-                          <img
-                            src={booking.property?.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994"}
-                            alt={booking.property?.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
-                            {booking.property?.title}
-                          </h3>
-                          <p className="text-airbnb-light mb-4">
-                            Check-in: {new Date(booking.check_in).toLocaleDateString()}
-                            <br />
-                            Check-out: {new Date(booking.check_out).toLocaleDateString()}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-airbnb-dark font-semibold">
-                              ${booking.total_price} total
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-3 py-1 rounded-full text-sm ${
-                                booking.status === 'confirmed' 
-                                  ? 'bg-green-100 text-green-600'
-                                  : booking.status === 'cancelled'
-                                  ? 'bg-red-100 text-red-600'
-                                  : 'bg-yellow-100 text-yellow-600'
-                              }`}>
-                                {booking.status}
+                <>
+                  <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+                    <h2 className="text-xl font-bold text-airbnb-dark mb-6">
+                      My Bookings
+                    </h2>
+                    
+                    <div className="space-y-6">
+                      {bookings.map((booking) => (
+                        <div key={booking.id} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
+                            <img
+                              src={booking.property?.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994"}
+                              alt={booking.property?.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
+                              {booking.property?.title}
+                            </h3>
+                            <p className="text-airbnb-light mb-4">
+                              Check-in: {new Date(booking.check_in).toLocaleDateString()}
+                              <br />
+                              Check-out: {new Date(booking.check_out).toLocaleDateString()}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-airbnb-dark font-semibold">
+                                ${booking.total_price} total
                               </span>
-                              {booking.status !== 'cancelled' && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                                      Cancel
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to cancel this booking? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleCancelBooking(booking.id)}
-                                        className="bg-red-500 hover:bg-red-600"
-                                      >
-                                        Cancel Booking
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                              <Button variant="outline">View Details</Button>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-3 py-1 rounded-full text-sm ${
+                                  booking.status === 'confirmed' 
+                                    ? 'bg-green-100 text-green-600'
+                                    : booking.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-600'
+                                    : 'bg-yellow-100 text-yellow-600'
+                                }`}>
+                                  {booking.status}
+                                </span>
+                                {booking.status !== 'cancelled' && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                                        Cancel
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to cancel this booking? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleCancelBooking(booking.id)}
+                                          className="bg-red-500 hover:bg-red-600"
+                                        >
+                                          Cancel Booking
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => navigate(`/properties/${booking.property_id}`)}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  <div className="bg-white rounded-xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold text-airbnb-dark mb-6">
+                      Saved Properties
+                    </h2>
+                    
+                    <div className="space-y-6">
+                      {savedProperties.map((property) => (
+                        <div key={property.id} className="flex flex-col md:flex-row border rounded-lg p-4 hover:shadow-md transition-shadow">
+                          <div className="w-full md:w-48 aspect-video md:aspect-square bg-gray-200 rounded-lg overflow-hidden mb-4 md:mb-0 md:mr-6">
+                            <img
+                              src={property.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994"}
+                              alt={property.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-airbnb-dark mb-2">
+                              {property.title}
+                            </h3>
+                            <p className="text-airbnb-light mb-4 flex items-center">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {property.location}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-airbnb-dark font-semibold">
+                                ${property.price_per_night} per night
+                              </span>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                  onClick={() => handleUnsaveProperty(property.id)}
+                                >
+                                  <Heart className="w-4 h-4 mr-2 fill-current" />
+                                  Unsave
+                                </Button>
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => navigate(`/properties/${property.id}`)}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
