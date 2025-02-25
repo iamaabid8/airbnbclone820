@@ -1,3 +1,4 @@
+
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,8 @@ import { PropertyHeader } from "@/components/property/PropertyHeader";
 import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
+import { Button } from "@/components/ui/button";
+import { Heart } from "lucide-react";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -18,29 +21,6 @@ const PropertyDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  console.log("Current property ID:", id); // Debug log
-
-  const { data: property, isLoading, error } = useQuery({
-    queryKey: ['property', id],
-    queryFn: async () => {
-      console.log("Fetching property with ID:", id); // Debug log
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      console.log("Supabase response:", { data, error }); // Debug log
-
-      if (error) {
-        console.error("Supabase error:", error); // Debug log
-        throw error;
-      }
-      return data;
-    },
-    enabled: !!id, // Only run query if we have an ID
-  });
-
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
@@ -48,6 +28,102 @@ const PropertyDetails = () => {
       return session;
     },
   });
+
+  const { data: property, isLoading, error } = useQuery({
+    queryKey: ['property', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: isSaved } = useQuery({
+    queryKey: ['saved', id, session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id || !id) return false;
+      const { data } = await supabase
+        .from('saved_properties')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('property_id', id)
+        .single();
+      return !!data;
+    },
+    enabled: !!session?.user?.id && !!id,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) {
+        throw new Error('Please sign in to save properties');
+      }
+      const { error } = await supabase
+        .from('saved_properties')
+        .insert({
+          user_id: session.user.id,
+          property_id: id,
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved', id] });
+      toast({
+        title: "Property saved",
+        description: "This property has been added to your saved list.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      if (error.message.includes('sign in')) {
+        navigate('/auth');
+      }
+    },
+  });
+
+  const unsaveMutation = useMutation({
+    mutationFn: async () => {
+      if (!session?.user?.id) return;
+      const { error } = await supabase
+        .from('saved_properties')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('property_id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved', id] });
+      toast({
+        title: "Property removed",
+        description: "This property has been removed from your saved list.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveToggle = () => {
+    if (isSaved) {
+      unsaveMutation.mutate();
+    } else {
+      saveMutation.mutate();
+    }
+  };
 
   const bookingMutation = useMutation({
     mutationFn: async (bookingData: {
@@ -181,12 +257,25 @@ const PropertyDetails = () => {
       <PropertyNavigation />
 
       <div className="container mx-auto pt-24 px-6">
-        <PropertyHeader
-          title={property.title}
-          rating={property.rating}
-          totalRatings={property.total_ratings}
-          location={property.location}
-        />
+        <div className="flex items-center justify-between mb-6">
+          <PropertyHeader
+            title={property.title}
+            rating={property.rating}
+            totalRatings={property.total_ratings}
+            location={property.location}
+          />
+          <Button
+            variant="outline"
+            className={`${
+              isSaved ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-gray-600'
+            }`}
+            onClick={handleSaveToggle}
+            disabled={saveMutation.isPending || unsaveMutation.isPending}
+          >
+            <Heart className={`w-5 h-5 mr-2 ${isSaved ? 'fill-current' : ''}`} />
+            {isSaved ? 'Saved' : 'Save'}
+          </Button>
+        </div>
 
         <PropertyImages images={property.images} title={property.title} />
 
