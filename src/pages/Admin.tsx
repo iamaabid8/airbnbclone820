@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useQuery } from "@tanstack/react-query";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -70,6 +71,19 @@ const Admin = () => {
 
     checkAdmin();
   }, []);
+
+  const { data: properties, isLoading } = useQuery({
+    queryKey: ['admin-properties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .gt('price_per_night', 0); // Filter out zero-price properties
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     const fetchData = async () => {
