@@ -30,7 +30,6 @@ import { useQuery } from "@tanstack/react-query";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [properties, setProperties] = useState([]);
   const [users, setUsers] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState({
@@ -44,6 +43,19 @@ const Admin = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [newPrice, setNewPrice] = useState("");
+
+  const { data: propertiesData, isLoading: isLoadingProperties } = useQuery({
+    queryKey: ['admin-properties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .gt('price_per_night', 0); // Filter out zero-price properties
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -72,31 +84,9 @@ const Admin = () => {
     checkAdmin();
   }, []);
 
-  const { data: properties, isLoading } = useQuery({
-    queryKey: ['admin-properties'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .gt('price_per_night', 0); // Filter out zero-price properties
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (activeTab === "properties" || activeTab === "dashboard") {
-          const { data: propertiesData, error: propertiesError } = await supabase
-            .from('properties')
-            .select('*');
-          
-          if (propertiesError) throw propertiesError;
-          setProperties(propertiesData || []);
-        }
-
         if (activeTab === "users" || activeTab === "dashboard") {
           const { data: profilesData, error: profilesError } = await supabase
             .from('profiles')
@@ -120,7 +110,7 @@ const Admin = () => {
 
         if (activeTab === "dashboard") {
           setStats({
-            totalProperties: properties.length,
+            totalProperties: propertiesData?.length || 0,
             activeUsers: users.length,
             totalBookings: bookings.length,
             revenue: bookings.reduce((acc: number, booking: any) => 
@@ -137,7 +127,7 @@ const Admin = () => {
     };
 
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, propertiesData]);
 
   const handleDeleteProperty = async (id: string) => {
     try {
