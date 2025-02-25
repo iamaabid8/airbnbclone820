@@ -44,7 +44,7 @@ const Admin = () => {
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [newPrice, setNewPrice] = useState("");
 
-  const { data: propertiesData, isLoading: isLoadingProperties } = useQuery({
+  const { data: properties, isLoading, refetch: refetchProperties } = useQuery({
     queryKey: ['admin-properties'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,7 +53,7 @@ const Admin = () => {
         .gt('price_per_night', 0); // Filter out zero-price properties
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -110,7 +110,7 @@ const Admin = () => {
 
         if (activeTab === "dashboard") {
           setStats({
-            totalProperties: propertiesData?.length || 0,
+            totalProperties: properties?.length || 0,
             activeUsers: users.length,
             totalBookings: bookings.length,
             revenue: bookings.reduce((acc: number, booking: any) => 
@@ -127,7 +127,7 @@ const Admin = () => {
     };
 
     fetchData();
-  }, [activeTab, propertiesData]);
+  }, [activeTab, properties]);
 
   const handleDeleteProperty = async (id: string) => {
     try {
@@ -145,7 +145,7 @@ const Admin = () => {
       
       if (propertyError) throw propertyError;
       
-      setProperties(properties.filter((prop: any) => prop.id !== id));
+      refetchProperties();
       
       toast({
         title: "Success",
@@ -200,11 +200,7 @@ const Admin = () => {
 
       if (error) throw error;
 
-      setProperties(properties.map((prop: any) => 
-        prop.id === editingProperty.id 
-          ? { ...prop, price_per_night: parseFloat(newPrice) }
-          : prop
-      ));
+      refetchProperties();
 
       setIsEditDialogOpen(false);
       setEditingProperty(null);
