@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -40,14 +41,13 @@ const Index = () => {
       console.log("Fetching properties with filters:", filters);
       let query = supabase
         .from('properties')
-        .select('*')
-        .gt('price_per_night', 0); // Filter out properties with price 0
+        .select('*');
 
       if (filters) {
         if (filters.location) {
           query = query.ilike('location', `%${filters.location}%`);
         }
-        if (filters.propertyType) {
+        if (filters.propertyType && filters.propertyType !== 'All types') {
           query = query.eq('property_type', filters.propertyType);
         }
         if (filters.priceRange) {
@@ -58,8 +58,16 @@ const Index = () => {
         if (filters.minRating > 0) {
           query = query.gte('rating', filters.minRating);
         }
-        if (filters.amenities.length > 0) {
+        if (filters.amenities && filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
+        }
+        if (filters.checkIn && filters.checkOut) {
+          // Note: This is a simplified availability check. In a real app,
+          // you'd want to check against actual bookings
+          query = query.gt('price_per_night', 0); // Just ensure it's available
+        }
+        if (filters.guests > 1) {
+          query = query.gte('max_guests', filters.guests);
         }
       }
 
@@ -108,13 +116,14 @@ const Index = () => {
   };
 
   const handleSearch = (newFilters: PropertyFilters) => {
+    console.log("Search filters:", newFilters);
     setFilters(newFilters);
-    setSelectedCategory(null);
+    setSelectedCategory(null); // Reset category when searching
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    setFilters(null);
+    setFilters(null); // Reset filters when selecting a category
   };
 
   return (
