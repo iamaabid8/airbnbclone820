@@ -57,7 +57,7 @@ const Profile = () => {
       if (profile?.role === 'host') {
         fetchProperties();
       }
-      fetchUserBookings();
+      fetchBookings();
     }
   }, [user, profile]);
 
@@ -218,7 +218,7 @@ const Profile = () => {
         description: "Your booking has been cancelled successfully.",
       });
 
-      fetchUserBookings(); // Updated from fetchBookings to fetchUserBookings
+      fetchBookings();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -226,34 +226,6 @@ const Profile = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const fetchProperties = async () => {
-    const { data, error } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('owner_id', user.id);
-
-    if (error) {
-      console.error('Error fetching properties:', error);
-      return;
-    }
-
-    setProperties(data || []);
-  };
-
-  const fetchUserBookings = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*, property:property_id(*)')
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('Error fetching bookings:', error);
-      return;
-    }
-
-    setBookings(data || []);
   };
 
   return (
