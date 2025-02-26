@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Settings, Home, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ const HostDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // New property form state
   const [newProperty, setNewProperty] = useState({
     title: "",
     description: "",
@@ -80,7 +78,9 @@ const HostDashboard = () => {
       .from('bookings')
       .select(`
         *,
-        profiles:profiles(name, email)
+        user:user_id (
+          email
+        )
       `)
       .in('property_id', propertyIds);
 
@@ -269,7 +269,7 @@ const HostDashboard = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-semibold">
-                            {booking.profiles?.name || booking.profiles?.email}
+                            {booking.user?.email || "Guest"}
                           </p>
                           <p className="text-sm text-gray-500">
                             {new Date(booking.check_in).toLocaleDateString()} - {new Date(booking.check_out).toLocaleDateString()}
