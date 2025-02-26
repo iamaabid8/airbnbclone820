@@ -20,6 +20,7 @@ interface Property {
   bedrooms: number;
   bathrooms: number;
   max_guests: number;
+  owner_id: string | null;
 }
 
 interface PropertiesGridProps {
@@ -82,10 +83,6 @@ export const PropertiesGrid = ({
               <p className="text-sm text-gray-500">{property.location}</p>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
-                <Edit className="w-4 h-4 mr-1" />
-                Edit
-              </Button>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -150,7 +147,22 @@ export const PropertiesGrid = ({
         ) : properties && properties.length > 0 ? (
           <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {properties.map((property) => (
-              isAdmin ? renderAdminView(property) : <PropertyCard key={property.id} property={property} />
+              isAdmin ? renderAdminView(property) : (
+                <div key={property.id} className="relative">
+                  <PropertyCard property={property} />
+                  {/* Show delete button for host on their own properties */}
+                  {(property.owner_id === supabase.auth.getSession()?.user?.id) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 z-10"
+                      onClick={() => handleDelete(property.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              )
             ))}
           </div>
         ) : (

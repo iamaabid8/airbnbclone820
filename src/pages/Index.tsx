@@ -29,19 +29,53 @@ type Property = {
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [filters, setFilters] = useState<PropertyFilters | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: properties, isLoading } = useQuery({
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setIsAdmin(data?.role === 'admin');
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setIsAdmin(data?.role === 'admin');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { data: properties, isLoading, refetch } = useQuery({
     queryKey: ['properties', filters, selectedCategory],
     queryFn: async () => {
-      console.log("Fetching properties with filters:", filters);
       let query = supabase
         .from('properties')
         .select('*')
-        .gt('price_per_night', 0); // Always filter out zero-price properties
+        .gt('price_per_night', 0);
 
       if (filters) {
         if (filters.location) {
@@ -72,26 +106,10 @@ const Index = () => {
 
       const { data, error } = await query;
       
-      console.log("Supabase response:", { data, error });
-      
       if (error) throw error;
       return data as Property[];
     },
   });
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -113,12 +131,16 @@ const Index = () => {
   const handleSearch = (newFilters: PropertyFilters) => {
     console.log("Search filters:", newFilters);
     setFilters(newFilters);
-    setSelectedCategory(null); // Reset category when searching
+    setSelectedCategory(null);
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    setFilters(null); // Reset filters when selecting a category
+    setFilters(null);
+  };
+
+  const handleDeleteProperty = () => {
+    refetch();
   };
 
   return (
@@ -148,6 +170,8 @@ const Index = () => {
         isLoading={isLoading}
         selectedCategory={selectedCategory}
         filters={filters}
+        isAdmin={isAdmin}
+        onDelete={handleDeleteProperty}
       />
 
       <footer className="bg-gray-100 mt-auto">
