@@ -367,7 +367,7 @@ const Admin = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {properties.map((property: any) => (
+                  {properties?.map((property: any) => (
                     <div key={property.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center">
                         <div className="w-16 h-16 bg-gray-200 rounded-lg mr-4">
@@ -380,7 +380,9 @@ const Admin = () => {
                         <div>
                           <h3 className="font-semibold text-airbnb-dark">{property.title}</h3>
                           <p className="text-airbnb-light">{property.location}</p>
-                          <p className="text-airbnb-primary font-medium">₹{property.price_per_night}/night</p>
+                          <p className="text-airbnb-primary font-medium">
+                            ₹{property.price_per_night.toLocaleString('en-IN')} / night
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">

@@ -17,7 +17,6 @@ type Property = {
 };
 
 export const PropertyCard = ({ property }: { property: Property }) => {
-  const priceInRupees = Math.round(property.price_per_night * 83);
   const defaultImage = "https://images.unsplash.com/photo-1487958449943-2429e8be8625";
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -69,7 +68,7 @@ export const PropertyCard = ({ property }: { property: Property }) => {
         </div>
         <div className="flex justify-between items-center">
           <p className="text-airbnb-dark">
-            <span className="font-semibold">₹{priceInRupees.toLocaleString('en-IN')}</span>
+            <span className="font-semibold">₹{property.price_per_night.toLocaleString('en-IN')}</span>
             <span className="text-sm text-muted-foreground"> / night</span>
           </p>
           <Link to={`/property/${property.id}`}>
