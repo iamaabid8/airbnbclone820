@@ -1,4 +1,3 @@
-
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
@@ -89,67 +88,72 @@ export const PropertiesGrid = ({
     }
   };
 
-  const renderAdminView = (property: Property) => (
-    <div key={property.id} className="bg-white rounded-lg shadow p-6">
-      <div className="flex gap-4">
-        <div className="w-40 h-32">
-          <img
-            src={property.images?.[0] || "/placeholder.svg"}
-            alt={property.title}
-            className="w-full h-full object-cover rounded-lg"
-          />
-        </div>
-        <div className="flex-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{property.title}</h3>
-              <p className="text-sm text-gray-500">{property.location}</p>
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={() => handleDelete(property.id)}
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Delete
-              </Button>
-            </div>
+  const renderAdminView = (property: Property) => {
+    // Format price consistently using Indian locale and ₹ symbol
+    const formattedPrice = property.price_per_night.toLocaleString('en-IN');
+    
+    return (
+      <div key={property.id} className="bg-white rounded-lg shadow p-6">
+        <div className="flex gap-4">
+          <div className="w-40 h-32">
+            <img
+              src={property.images?.[0] || "/placeholder.svg"}
+              alt={property.title}
+              className="w-full h-full object-cover rounded-lg"
+            />
           </div>
-          <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="font-medium">Price:</span>
-              <br />
-              ₹{property.price_per_night}/night
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{property.title}</h3>
+                <p className="text-sm text-gray-500">{property.location}</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                  onClick={() => handleDelete(property.id)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Type:</span>
-              <br />
-              {property.property_type}
+            <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Price:</span>
+                <br />
+                ₹{formattedPrice}/night
+              </div>
+              <div>
+                <span className="font-medium">Type:</span>
+                <br />
+                {property.property_type}
+              </div>
+              <div>
+                <span className="font-medium">Rooms:</span>
+                <br />
+                {property.bedrooms}B {property.bathrooms}BA
+              </div>
+              <div>
+                <span className="font-medium">Guests:</span>
+                <br />
+                Max {property.max_guests}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Rooms:</span>
-              <br />
-              {property.bedrooms}B {property.bathrooms}BA
+            <div className="mt-2">
+              <span className="text-sm font-medium">Amenities:</span>
+              <p className="text-sm text-gray-500">
+                {property.amenities?.slice(0, 5).join(", ")}
+                {property.amenities && property.amenities.length > 5 ? "..." : ""}
+              </p>
             </div>
-            <div>
-              <span className="font-medium">Guests:</span>
-              <br />
-              Max {property.max_guests}
-            </div>
-          </div>
-          <div className="mt-2">
-            <span className="text-sm font-medium">Amenities:</span>
-            <p className="text-sm text-gray-500">
-              {property.amenities?.slice(0, 5).join(", ")}
-              {property.amenities && property.amenities.length > 5 ? "..." : ""}
-            </p>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <section className="py-20 px-6 bg-gray-50">

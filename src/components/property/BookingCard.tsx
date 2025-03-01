@@ -35,7 +35,9 @@ export const BookingCard = ({
   onGuestsChange,
   onBookingSubmit,
 }: BookingCardProps) => {
-  const priceInRupees = Math.round(pricePerNight * 83);
+  // Format price consistently using Indian locale
+  const formattedPrice = pricePerNight.toLocaleString('en-IN');
+  
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isDateConflict, setIsDateConflict] = useState(false);
@@ -126,7 +128,7 @@ export const BookingCard = ({
   return (
     <div className="sticky top-24 bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-2xl font-bold text-airbnb-dark">₹{priceInRupees.toLocaleString('en-IN')}</span>
+        <span className="text-2xl font-bold text-airbnb-dark">₹{formattedPrice}</span>
         <span className="text-airbnb-light">per night</span>
       </div>
 
@@ -177,12 +179,12 @@ export const BookingCard = ({
       {dates.checkIn && dates.checkOut && !isDateConflict && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between mb-2">
-            <span>₹{priceInRupees} × {differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))} nights</span>
-            <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+            <span>₹{formattedPrice} × {differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))} nights</span>
+            <span>₹{(pricePerNight * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
           </div>
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+            <span>₹{(pricePerNight * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
           </div>
         </div>
       )}

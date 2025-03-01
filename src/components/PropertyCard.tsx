@@ -25,6 +25,9 @@ export const PropertyCard = ({ property }: { property: Property }) => {
 
   const imageUrl = property.images?.[0] || defaultImage;
 
+  // Format price consistently using Indian locale and ₹ symbol
+  const formattedPrice = property.price_per_night.toLocaleString('en-IN');
+
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="aspect-video bg-gray-200 relative">
@@ -68,7 +71,7 @@ export const PropertyCard = ({ property }: { property: Property }) => {
         </div>
         <div className="flex justify-between items-center">
           <p className="text-airbnb-dark">
-            <span className="font-semibold">₹{property.price_per_night.toLocaleString('en-IN')}</span>
+            <span className="font-semibold">₹{formattedPrice}</span>
             <span className="text-sm text-muted-foreground"> / night</span>
           </p>
           <Link to={`/property/${property.id}`}>
