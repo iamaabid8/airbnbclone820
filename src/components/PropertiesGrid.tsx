@@ -6,6 +6,8 @@ import { Button } from "./ui/button";
 import { toast } from "./ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { AvailabilityBadge } from "./property/AvailabilityBadge";
+import { addDays, isWithinInterval } from "date-fns";
 
 interface Property {
   id: string;
@@ -42,6 +44,7 @@ export const PropertiesGrid = ({
   onDelete
 }: PropertiesGridProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
 
   // Fetch the current user session when component mounts
   useEffect(() => {
@@ -66,6 +69,56 @@ export const PropertiesGrid = ({
     
     fetchSession();
   }, []);
+
+  // Fetch availability status for all properties
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!properties || properties.length === 0) return;
+      
+      const propertyIds = properties.map(p => p.id);
+      const today = new Date();
+      const nextWeek = addDays(today, 7);
+      
+      // Get all bookings for the properties
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('property_id, check_in, check_out')
+        .in('property_id', propertyIds)
+        .eq('status', 'confirmed');
+      
+      if (error) {
+        console.error("Error fetching bookings:", error);
+        return;
+      }
+      
+      // Create availability map
+      const availabilityStatus: Record<string, boolean> = {};
+      
+      // Initialize all properties as available
+      propertyIds.forEach(id => {
+        availabilityStatus[id] = true;
+      });
+      
+      // Check for bookings in the next week
+      bookings?.forEach(booking => {
+        const checkIn = new Date(booking.check_in);
+        const checkOut = new Date(booking.check_out);
+        
+        // If booking overlaps with next week, mark property as unavailable
+        if (
+          (checkIn <= nextWeek && checkOut >= today) ||
+          isWithinInterval(today, { start: checkIn, end: checkOut }) ||
+          isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
+        ) {
+          availabilityStatus[booking.property_id] = false;
+        }
+      });
+      
+      setAvailabilityMap(availabilityStatus);
+    };
+    
+    checkAvailability();
+  }, [properties]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -96,15 +149,20 @@ export const PropertiesGrid = ({
   const renderAdminView = (property: Property) => {
     // Format price consistently using Indian locale and ₹ symbol
     const formattedPrice = property.price_per_night.toLocaleString('en-IN');
+    const isAvailable = availabilityMap[property.id] !== false;
     
     return (
       <div key={property.id} className="bg-white rounded-lg shadow p-6">
         <div className="flex gap-4">
-          <div className="w-40 h-32">
+          <div className="w-40 h-32 relative">
             <img
               src={property.images?.[0] || "/placeholder.svg"}
               alt={property.title}
               className="w-full h-full object-cover rounded-lg"
+            />
+            <AvailabilityBadge 
+              isAvailable={isAvailable} 
+              className="top-1 left-1 text-xs px-2 py-0.5"
             />
           </div>
           <div className="flex-1">

@@ -2,9 +2,9 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { format, addDays, parseISO } from "date-fns";
+import { format, addDays, parseISO, isWithinInterval } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
 import { PropertyHeader } from "@/components/property/PropertyHeader";
 import { PropertyImages } from "@/components/property/PropertyImages";
@@ -15,6 +15,7 @@ const PropertyDetails = () => {
   const { id } = useParams();
   const [guests, setGuests] = useState(1);
   const [dates, setDates] = useState({ checkIn: "", checkOut: "" });
+  const [isPropertyAvailable, setIsPropertyAvailable] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -36,6 +37,50 @@ const PropertyDetails = () => {
     enabled: !!id,
   });
 
+  // Fetch existing bookings for this property
+  const { data: bookings } = useQuery({
+    queryKey: ['property-bookings', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('check_in, check_out, status')
+        .eq('property_id', id)
+        .eq('status', 'confirmed');
+        
+      if (error) {
+        throw error;
+      }
+      
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Check if the property has any bookings in the next 7 days
+  useEffect(() => {
+    if (bookings && bookings.length > 0) {
+      const today = new Date();
+      const nextWeek = addDays(today, 7);
+      
+      // Check if any booking overlaps with the next week
+      const hasUpcomingBooking = bookings.some(booking => {
+        const checkIn = new Date(booking.check_in);
+        const checkOut = new Date(booking.check_out);
+        
+        // Check if booking period overlaps with next week
+        return (
+          (checkIn <= nextWeek && checkOut >= today) ||
+          isWithinInterval(today, { start: checkIn, end: checkOut }) ||
+          isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
+        );
+      });
+      
+      setIsPropertyAvailable(!hasUpcomingBooking);
+    } else {
+      setIsPropertyAvailable(true);
+    }
+  }, [bookings]);
+  
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
@@ -280,7 +325,11 @@ const PropertyDetails = () => {
           location={property.location}
         />
 
-        <PropertyImages images={property.images} title={property.title} />
+        <PropertyImages 
+          images={property.images} 
+          title={property.title} 
+          isAvailable={isPropertyAvailable}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="md:col-span-2">

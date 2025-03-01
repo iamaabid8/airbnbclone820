@@ -1,18 +1,22 @@
 
+import { AvailabilityBadge } from "./AvailabilityBadge";
+
 interface PropertyImagesProps {
   images: string[] | null;
   title: string;
+  isAvailable?: boolean;
 }
 
-export const PropertyImages = ({ images, title }: PropertyImagesProps) => {
+export const PropertyImages = ({ images, title, isAvailable = true }: PropertyImagesProps) => {
   return (
     <div className="grid grid-cols-2 gap-4 mb-12">
-      <div className="col-span-2 md:col-span-1 aspect-video bg-gray-200 rounded-lg overflow-hidden">
+      <div className="col-span-2 md:col-span-1 aspect-video bg-gray-200 rounded-lg overflow-hidden relative">
         <img
           src={images?.[0] || "https://images.unsplash.com/photo-1649972904349-6e44c42644a7"}
           alt={title}
           className="w-full h-full object-cover"
         />
+        <AvailabilityBadge isAvailable={isAvailable} className="text-sm" />
       </div>
       <div className="hidden md:grid grid-cols-2 gap-4">
         {(images?.slice(1, 5) || Array(4).fill(null)).map((image, index) => (
