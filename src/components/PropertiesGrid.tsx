@@ -1,3 +1,4 @@
+
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
@@ -53,7 +54,11 @@ export const PropertiesGrid = ({
         }
         
         // Set the user ID if a session exists
-        setCurrentUserId(data.session?.user.id || null);
+        if (data.session) {
+          setCurrentUserId(data.session.user.id);
+        } else {
+          setCurrentUserId(null);
+        }
       } catch (error) {
         console.error("Unexpected error fetching session:", error);
       }

@@ -2,10 +2,11 @@
 import { Calendar, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format, parseISO } from "date-fns";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/use-toast";
 
 interface BookingCardProps {
   pricePerNight: number;
@@ -46,6 +47,7 @@ export const BookingCard = ({
   useEffect(() => {
     const fetchBookedDates = async () => {
       try {
+        setIsCheckingAvailability(true);
         const { data, error } = await supabase
           .from('bookings')
           .select('check_in, check_out')
@@ -54,13 +56,19 @@ export const BookingCard = ({
           
         if (error) {
           console.error('Error fetching bookings:', error);
+          toast({
+            title: "Error",
+            description: "Could not check availability. Please try again.",
+            variant: "destructive",
+          });
           return;
         }
         
         // Process the bookings to get all dates in between check-in and check-out
         const bookedDates: string[] = [];
         
-        if (data) {
+        if (data && data.length > 0) {
+          console.log("Found bookings:", data);
           data.forEach(booking => {
             const checkIn = new Date(booking.check_in);
             const checkOut = new Date(booking.check_out);
@@ -68,15 +76,25 @@ export const BookingCard = ({
             // Add all dates between check-in and check-out (inclusive)
             const currentDate = new Date(checkIn);
             while (currentDate <= checkOut) {
-              bookedDates.push(currentDate.toISOString().split('T')[0]);
+              bookedDates.push(format(currentDate, 'yyyy-MM-dd'));
               currentDate.setDate(currentDate.getDate() + 1);
             }
           });
+          console.log("Unavailable dates:", bookedDates);
+        } else {
+          console.log("No existing bookings found for property:", propertyId);
         }
         
         setUnavailableDates(bookedDates);
+        setIsCheckingAvailability(false);
       } catch (error) {
         console.error('Error processing booked dates:', error);
+        setIsCheckingAvailability(false);
+        toast({
+          title: "Error",
+          description: "Could not process availability. Please try again.",
+          variant: "destructive",
+        });
       }
     };
     
@@ -88,40 +106,95 @@ export const BookingCard = ({
   // Check if selected dates conflict with booked dates
   useEffect(() => {
     if (dates.checkIn && dates.checkOut) {
-      setIsCheckingAvailability(true);
-      
-      // Convert selected dates to Date objects
       const checkIn = new Date(dates.checkIn);
       const checkOut = new Date(dates.checkOut);
       
       // Check for conflicts
-      const conflict = unavailableDates.some(date => {
-        const bookedDate = new Date(date);
-        return bookedDate >= checkIn && bookedDate <= checkOut;
-      });
+      let hasConflict = false;
       
-      setIsDateConflict(conflict);
-      setIsCheckingAvailability(false);
+      // Convert dates to string format 'YYYY-MM-DD' for comparison
+      const checkInStr = format(checkIn, 'yyyy-MM-dd');
+      const checkOutStr = format(checkOut, 'yyyy-MM-dd');
+      
+      // Generate array of all selected dates
+      const selectedDates: string[] = [];
+      const currentDate = new Date(checkIn);
+      
+      while (currentDate <= checkOut) {
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        selectedDates.push(dateStr);
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Check if any selected date is unavailable
+      hasConflict = selectedDates.some(date => unavailableDates.includes(date));
+      
+      console.log("Selected dates:", selectedDates);
+      console.log("Has conflict:", hasConflict);
+      
+      setIsDateConflict(hasConflict);
     }
   }, [dates.checkIn, dates.checkOut, unavailableDates]);
-
-  // Format available dates for input restriction
-  const disabledDates = unavailableDates.map(date => date);
 
   const handleCheckInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCheckIn = e.target.value;
     
+    if (!newCheckIn) {
+      onDatesChange({ ...dates, checkIn: '' });
+      return;
+    }
+    
     // Check if selected date is in unavailable dates
     if (unavailableDates.includes(newCheckIn)) {
-      alert('This date is already booked. Please select another date.');
+      toast({
+        title: "Date unavailable",
+        description: "This date is already booked. Please select another date.",
+        variant: "destructive",
+      });
       return;
     }
     
     onDatesChange({ ...dates, checkIn: newCheckIn });
+    
+    // If checkout is before new check-in, reset checkout
+    if (dates.checkOut && new Date(dates.checkOut) <= new Date(newCheckIn)) {
+      onDatesChange({ checkIn: newCheckIn, checkOut: '' });
+    }
   };
 
   const handleCheckOutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCheckOut = e.target.value;
+    
+    if (!newCheckOut) {
+      onDatesChange({ ...dates, checkOut: '' });
+      return;
+    }
+    
+    // Generate array of dates from check-in to check-out
+    const checkIn = new Date(dates.checkIn);
+    const checkOut = new Date(newCheckOut);
+    
+    const selectedDates: string[] = [];
+    const currentDate = new Date(checkIn);
+    
+    while (currentDate <= checkOut) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      selectedDates.push(dateStr);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Check if any selected date is unavailable
+    const hasConflict = selectedDates.some(date => unavailableDates.includes(date));
+    
+    if (hasConflict) {
+      toast({
+        title: "Date unavailable",
+        description: "Some of your selected dates are already booked. Please choose different dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     onDatesChange({ ...dates, checkOut: newCheckOut });
   };
 
@@ -172,6 +245,15 @@ export const BookingCard = ({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Some of your selected dates are already booked. Please choose different dates.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {unavailableDates.length > 0 && (
+        <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            This property has {unavailableDates.length} unavailable dates. Please choose dates carefully.
           </AlertDescription>
         </Alert>
       )}

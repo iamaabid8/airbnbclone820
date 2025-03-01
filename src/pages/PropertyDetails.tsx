@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { format, addDays } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
 import { PropertyHeader } from "@/components/property/PropertyHeader";
 import { PropertyImages } from "@/components/property/PropertyImages";
@@ -44,34 +44,60 @@ const PropertyDetails = () => {
     },
   });
 
-  // Check availability before booking
+  // Check availability mutation with more robust checking
   const checkAvailabilityMutation = useMutation({
     mutationFn: async (bookingDates: { checkIn: string; checkOut: string }) => {
+      console.log("Checking availability for dates:", bookingDates);
+      
       const { data, error } = await supabase
         .from('bookings')
         .select('check_in, check_out')
         .eq('property_id', id)
         .eq('status', 'confirmed');
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error checking availability:", error);
+        throw error;
+      }
       
-      // Check if selected dates overlap with any existing bookings
+      // Prepare dates for conflict checking
       const checkInDate = new Date(bookingDates.checkIn);
       const checkOutDate = new Date(bookingDates.checkOut);
       
-      const hasConflict = data.some((booking) => {
+      console.log("Existing bookings:", data);
+      
+      // Generate array of all dates in the requested booking
+      const requestedDates: string[] = [];
+      const currentDate = new Date(checkInDate);
+      while (currentDate <= checkOutDate) {
+        requestedDates.push(format(currentDate, 'yyyy-MM-dd'));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Check if any of the requested dates are already booked
+      for (const booking of data) {
         const bookedCheckIn = new Date(booking.check_in);
         const bookedCheckOut = new Date(booking.check_out);
         
-        // Check for overlap
-        return (
-          (checkInDate >= bookedCheckIn && checkInDate <= bookedCheckOut) ||
-          (checkOutDate >= bookedCheckIn && checkOutDate <= bookedCheckOut) ||
-          (checkInDate <= bookedCheckIn && checkOutDate >= bookedCheckOut)
-        );
-      });
+        // Generate array of all booked dates
+        const bookedDates: string[] = [];
+        const currentBookedDate = new Date(bookedCheckIn);
+        while (currentBookedDate <= bookedCheckOut) {
+          bookedDates.push(format(currentBookedDate, 'yyyy-MM-dd'));
+          currentBookedDate.setDate(currentBookedDate.getDate() + 1);
+        }
+        
+        // Check for overlap between requested dates and booked dates
+        const conflict = requestedDates.some(date => bookedDates.includes(date));
+        
+        if (conflict) {
+          console.log("Booking conflict detected");
+          return { isAvailable: false, conflictDates: bookedDates };
+        }
+      }
       
-      return { isAvailable: !hasConflict };
+      console.log("Dates are available");
+      return { isAvailable: true };
     }
   });
 
@@ -93,9 +119,13 @@ const PropertyDetails = () => {
         throw new Error("These dates are no longer available. Please select different dates.");
       }
       
+      // If available, proceed with booking
       const { data, error } = await supabase
         .from('bookings')
-        .insert([bookingData])
+        .insert([{
+          ...bookingData,
+          status: 'confirmed' // Auto-confirm the booking
+        }])
         .select()
         .single();
 
@@ -104,6 +134,9 @@ const PropertyDetails = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      // Also invalidate property query to refresh availability data
+      queryClient.invalidateQueries({ queryKey: ['property', id] });
+      
       toast({
         title: "Booking confirmed!",
         description: "Your reservation has been successfully made.",
@@ -160,16 +193,42 @@ const PropertyDetails = () => {
       return;
     }
 
-    const numberOfNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-    const totalPrice = numberOfNights * property.price_per_night;
-
-    bookingMutation.mutate({
-      property_id: property.id,
-      check_in: dates.checkIn,
-      check_out: dates.checkOut,
-      total_price: totalPrice,
-      user_id: session.user.id,
-    });
+    // Perform final availability check before processing
+    try {
+      const availabilityResult = await checkAvailabilityMutation.mutateAsync({
+        checkIn: dates.checkIn,
+        checkOut: dates.checkOut
+      });
+      
+      if (!availabilityResult.isAvailable) {
+        toast({
+          title: "Dates unavailable",
+          description: "Selected dates are no longer available. Please choose different dates.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Calculate the total price
+      const numberOfNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      const totalPrice = numberOfNights * property.price_per_night;
+  
+      // Process the booking
+      bookingMutation.mutate({
+        property_id: property.id,
+        check_in: dates.checkIn,
+        check_out: dates.checkOut,
+        total_price: totalPrice,
+        user_id: session.user.id,
+      });
+    } catch (error) {
+      console.error("Availability check failed:", error);
+      toast({
+        title: "Error",
+        description: "Could not verify availability. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -237,7 +296,7 @@ const PropertyDetails = () => {
               maxGuests={property.max_guests}
               dates={dates}
               guests={guests}
-              isLoading={bookingMutation.isPending}
+              isLoading={bookingMutation.isPending || checkAvailabilityMutation.isPending}
               minDate={tomorrow}
               propertyId={property.id}
               onDatesChange={setDates}
