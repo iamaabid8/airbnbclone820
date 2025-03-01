@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Home, BookOpen, BarChart, Settings, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,12 +110,16 @@ const Admin = () => {
         }
 
         if (activeTab === "dashboard") {
+          // Calculate revenue only from confirmed bookings
+          const confirmedRevenue = bookings
+            .filter((booking: any) => booking.status === 'confirmed')
+            .reduce((acc: number, booking: any) => acc + Number(booking.total_price), 0);
+            
           setStats({
             totalProperties: properties?.length || 0,
             activeUsers: users.length,
             totalBookings: bookings.length,
-            revenue: bookings.reduce((acc: number, booking: any) => 
-              acc + Number(booking.total_price), 0),
+            revenue: confirmedRevenue,
           });
         }
       } catch (error: any) {
@@ -127,7 +132,7 @@ const Admin = () => {
     };
 
     fetchData();
-  }, [activeTab, properties]);
+  }, [activeTab, properties, bookings, users]);
 
   const handleDeleteProperty = async (id: string) => {
     try {
@@ -306,7 +311,7 @@ const Admin = () => {
                   { title: "Total Properties", value: stats.totalProperties, icon: Home },
                   { title: "Active Users", value: stats.activeUsers, icon: Users },
                   { title: "Total Bookings", value: stats.totalBookings, icon: BookOpen },
-                  { title: "Revenue", value: `$${stats.revenue.toLocaleString()}`, icon: BarChart },
+                  { title: "Revenue", value: `₹${stats.revenue.toLocaleString('en-IN')}`, icon: BarChart },
                 ].map((stat) => (
                   <div key={stat.title} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -334,7 +339,16 @@ const Admin = () => {
                           </p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">View</Button>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs ${
+                          booking.status === 'confirmed' 
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-yellow-100 text-yellow-600'
+                        }`}>
+                          {booking.status}
+                        </span>
+                        <Button variant="ghost" size="sm">View</Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -513,6 +527,9 @@ const Admin = () => {
                           <h3 className="font-semibold text-airbnb-dark">Booking #{booking.id.slice(-6)}</h3>
                           <p className="text-airbnb-light">
                             Check-in: {new Date(booking.check_in).toLocaleDateString()}
+                          </p>
+                          <p className="text-airbnb-primary">
+                            Amount: ₹{booking.total_price.toLocaleString('en-IN')}
                           </p>
                         </div>
                       </div>
