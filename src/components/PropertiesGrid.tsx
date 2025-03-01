@@ -5,6 +5,7 @@ import type { PropertyFilters } from "./PropertySearch";
 import { Button } from "./ui/button";
 import { toast } from "./ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 interface Property {
   id: string;
@@ -40,6 +41,18 @@ export const PropertiesGrid = ({
   isAdmin = false,
   onDelete
 }: PropertiesGridProps) => {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch the current user session when component mounts
+  useEffect(() => {
+    const fetchSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setCurrentUserId(data.session?.user.id || null);
+    };
+    
+    fetchSession();
+  }, []);
+
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase
@@ -151,7 +164,7 @@ export const PropertiesGrid = ({
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
                   {/* Show delete button for host on their own properties */}
-                  {(property.owner_id === supabase.auth.getSession()?.user?.id) && (
+                  {(property.owner_id === currentUserId) && (
                     <Button
                       variant="destructive"
                       size="sm"
