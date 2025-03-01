@@ -46,8 +46,18 @@ export const PropertiesGrid = ({
   // Fetch the current user session when component mounts
   useEffect(() => {
     const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setCurrentUserId(data.session?.user.id || null);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error fetching session:", error);
+          return;
+        }
+        
+        // Set the user ID if a session exists
+        setCurrentUserId(data.session?.user.id || null);
+      } catch (error) {
+        console.error("Unexpected error fetching session:", error);
+      }
     };
     
     fetchSession();
