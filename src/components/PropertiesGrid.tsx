@@ -239,7 +239,10 @@ export const PropertiesGrid = ({
             {properties.map((property) => (
               isAdmin ? renderAdminView(property) : (
                 <div key={property.id} className="relative">
-                  <PropertyCard property={property} />
+                  <PropertyCard 
+                    property={property} 
+                    isAvailable={availabilityMap[property.id] !== false}
+                  />
                   {/* Only show delete button if user is admin and they own the property */}
                   {isAdmin && property.owner_id === currentUserId && (
                     <Button
