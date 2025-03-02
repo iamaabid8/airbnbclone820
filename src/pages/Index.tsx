@@ -69,9 +69,12 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const { data: properties, isLoading, refetch } = useQuery({
+  const { data: properties, isLoading, error, refetch } = useQuery({
     queryKey: ['properties', filters, selectedCategory],
     queryFn: async () => {
+      console.log("Fetching properties with filters:", filters);
+      console.log("Selected category:", selectedCategory);
+      
       let query = supabase
         .from('properties')
         .select('*')
@@ -106,10 +109,26 @@ const Index = () => {
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching properties:", error);
+        throw error;
+      }
+      
+      console.log("Fetched properties:", data);
       return data as Property[];
     },
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error("Error in properties query:", error);
+      toast({
+        title: "Error loading properties",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const handleLogout = async () => {
     try {

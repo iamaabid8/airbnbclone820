@@ -79,6 +79,8 @@ export const PropertiesGrid = ({
       const today = new Date();
       const nextWeek = addDays(today, 7);
       
+      console.log("Checking availability for properties:", propertyIds);
+      
       // Get all bookings for the properties
       const { data: bookings, error } = await supabase
         .from('bookings')
@@ -90,6 +92,8 @@ export const PropertiesGrid = ({
         console.error("Error fetching bookings:", error);
         return;
       }
+      
+      console.log("Bookings data:", bookings);
       
       // Create availability map
       const availabilityStatus: Record<string, boolean> = {};
@@ -114,6 +118,7 @@ export const PropertiesGrid = ({
         }
       });
       
+      console.log("Availability status:", availabilityStatus);
       setAvailabilityMap(availabilityStatus);
     };
     
@@ -225,7 +230,7 @@ export const PropertiesGrid = ({
           {filters ? 'Search Results' : selectedCategory ? `${selectedCategory}` : 'Featured places to stay'}
         </h2>
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((item) => (
               <div key={item} className="animate-pulse">
                 <div className="h-40 bg-gray-200 rounded-xl mb-4" />
@@ -237,7 +242,11 @@ export const PropertiesGrid = ({
         ) : properties && properties.length > 0 ? (
           <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {properties.map((property) => (
-              isAdmin ? renderAdminView(property) : (
+              isAdmin ? (
+                <div key={property.id}>
+                  {renderAdminView(property)}
+                </div>
+              ) : (
                 <div key={property.id} className="relative">
                   <PropertyCard 
                     property={property} 
