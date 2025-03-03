@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
 import { Button } from "./ui/button";
@@ -9,6 +9,7 @@ import { PropertySkeleton } from "./property/PropertySkeleton";
 import { NoPropertiesFound } from "./property/NoPropertiesFound";
 import { usePropertyAvailability } from "@/hooks/usePropertyAvailability";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { Card, CardContent } from "./ui/card";
 
 interface Property {
   id: string;
@@ -50,7 +51,16 @@ export const PropertiesGrid = ({
   const propertyIds = properties?.map(p => p.id) || [];
   
   // Use custom hook to check availability
-  const { availabilityMap } = usePropertyAvailability(propertyIds);
+  const { availabilityMap, isLoading: availabilityLoading } = usePropertyAvailability(propertyIds);
+
+  useEffect(() => {
+    console.log("PropertiesGrid rendered:", { 
+      propertiesCount: properties?.length,
+      isLoading,
+      selectedCategory,
+      hasFilters: !!filters
+    });
+  }, [properties, isLoading, selectedCategory, filters]);
 
   const handleDelete = (id: string) => {
     if (onDelete) {
@@ -68,16 +78,25 @@ export const PropertiesGrid = ({
   // Render loading skeletons
   const renderLoadingState = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: 3 }).map((_, index) => (
+      {Array.from({ length: 6 }).map((_, index) => (
         <PropertySkeleton key={`skeleton-${index}`} />
       ))}
     </div>
   );
 
+  // Render no properties state
+  const renderNoProperties = () => (
+    <Card className="p-6 bg-white shadow-sm">
+      <CardContent className="text-center pt-6">
+        <NoPropertiesFound />
+      </CardContent>
+    </Card>
+  );
+
   // Render properties grid
   const renderPropertiesGrid = () => {
     if (!properties || properties.length === 0) {
-      return <NoPropertiesFound />;
+      return renderNoProperties();
     }
 
     return (

@@ -11,6 +11,7 @@ export function useAuth() {
     const checkUser = async () => {
       setIsLoading(true);
       try {
+        console.log("Checking user auth status...");
         // Get current session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
@@ -21,20 +22,25 @@ export function useAuth() {
         }
         
         // Set the user state
-        setUser(session?.user ?? null);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        console.log("Current user:", currentUser ? "Logged in" : "Not logged in");
         
-        if (session?.user) {
+        if (currentUser) {
           // Get user profile data
           const { data, error: profileError } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', session.user.id)
+            .eq('id', currentUser.id)
             .single();
           
           if (profileError) {
             console.error("Error getting user profile:", profileError);
+            setIsAdmin(false);
           } else {
-            setIsAdmin(data?.role === 'admin');
+            const isUserAdmin = data?.role === 'admin';
+            setIsAdmin(isUserAdmin);
+            console.log("User is admin:", isUserAdmin);
           }
         } else {
           setIsAdmin(false);
@@ -49,25 +55,30 @@ export function useAuth() {
     checkUser();
 
     // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", { event: _event, hasUser: !!session?.user });
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", { event, hasUser: !!session?.user });
+      const newUser = session?.user ?? null;
+      setUser(newUser);
       
-      if (session?.user) {
+      if (newUser) {
         try {
           const { data, error } = await supabase
             .from('profiles')
             .select('role')
-            .eq('id', session.user.id)
+            .eq('id', newUser.id)
             .single();
           
           if (error) {
             console.error("Error getting user profile on auth change:", error);
+            setIsAdmin(false);
           } else {
-            setIsAdmin(data?.role === 'admin');
+            const isUserAdmin = data?.role === 'admin';
+            setIsAdmin(isUserAdmin);
+            console.log("User admin status updated:", isUserAdmin);
           }
         } catch (err) {
           console.error("Failed to fetch user profile:", err);
+          setIsAdmin(false);
         }
       } else {
         setIsAdmin(false);

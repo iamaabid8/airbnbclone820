@@ -26,12 +26,11 @@ const Index = () => {
     console.log("Properties state:", { count: properties?.length, propertiesLoading });
   }, [user, isAdmin, authLoading, properties, propertiesLoading]);
 
-  // Refetch properties when auth state changes
+  // Refetch properties when auth state changes or filters/category changes
   useEffect(() => {
-    if (!authLoading && user) {
-      refetch();
-    }
-  }, [authLoading, user, refetch]);
+    console.log("Triggering properties refetch...");
+    refetch();
+  }, [authLoading, user, filters, selectedCategory, refetch]);
 
   const handleLogout = async () => {
     try {
@@ -51,22 +50,24 @@ const Index = () => {
   };
 
   const handleSearch = (newFilters: PropertyFilters) => {
-    console.log("Search filters:", newFilters);
+    console.log("Search filters applied:", newFilters);
     setFilters(newFilters);
     setSelectedCategory(null);
   };
 
   const handleCategorySelect = (category: string) => {
+    console.log("Category selected:", category);
     setSelectedCategory(category);
     setFilters(null);
   };
 
   const handleDeleteProperty = () => {
+    console.log("Property deleted, refreshing list...");
     refetch();
   };
 
-  // Combined loading state
-  const isLoading = authLoading || propertiesLoading;
+  // Only show loading state on initial load, not on refetch
+  const isLoading = authLoading && propertiesLoading;
 
   return (
     <div className="min-h-screen w-full flex flex-col">

@@ -80,8 +80,10 @@ export function useProperties(filters: PropertyFilters | null, selectedCategory:
       }
     },
     retry: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60,  // Reduced to 1 minute
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
@@ -95,5 +97,10 @@ export function useProperties(filters: PropertyFilters | null, selectedCategory:
     }
   }, [error, toast]);
 
-  return { properties: properties || [], isLoading, error, refetch };
+  return { 
+    properties: properties || [], 
+    isLoading, 
+    error, 
+    refetch 
+  };
 }
