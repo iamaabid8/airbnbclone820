@@ -54,17 +54,21 @@ export function useAuth() {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (error) {
-          console.error("Error getting user profile on auth change:", error);
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error getting user profile on auth change:", error);
+          } else {
+            setIsAdmin(data?.role === 'admin');
+          }
+        } catch (err) {
+          console.error("Failed to fetch user profile:", err);
         }
-        
-        setIsAdmin(data?.role === 'admin');
       } else {
         setIsAdmin(false);
       }

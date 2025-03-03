@@ -47,7 +47,7 @@ export const PropertiesGrid = ({
   const { currentUserId } = useCurrentUser();
   
   // Get property IDs for availability checking
-  const propertyIds = properties?.map(p => p.id);
+  const propertyIds = properties?.map(p => p.id) || [];
   
   // Use custom hook to check availability
   const { availabilityMap } = usePropertyAvailability(propertyIds);
@@ -68,8 +68,8 @@ export const PropertiesGrid = ({
   // Render loading skeletons
   const renderLoadingState = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3].map((item) => (
-        <PropertySkeleton key={item} />
+      {Array.from({ length: 3 }).map((_, index) => (
+        <PropertySkeleton key={`skeleton-${index}`} />
       ))}
     </div>
   );

@@ -26,6 +26,13 @@ const Index = () => {
     console.log("Properties state:", { count: properties?.length, propertiesLoading });
   }, [user, isAdmin, authLoading, properties, propertiesLoading]);
 
+  // Refetch properties when auth state changes
+  useEffect(() => {
+    if (!authLoading && user) {
+      refetch();
+    }
+  }, [authLoading, user, refetch]);
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();

@@ -32,48 +32,56 @@ export function useProperties(filters: PropertyFilters | null, selectedCategory:
       console.log("Fetching properties with filters:", filters);
       console.log("Selected category:", selectedCategory);
       
-      let query = supabase
-        .from('properties')
-        .select('*')
-        .gt('price_per_night', 0);
+      try {
+        let query = supabase
+          .from('properties')
+          .select('*')
+          .gt('price_per_night', 0);
 
-      if (filters) {
-        if (filters.location) {
-          query = query.ilike('location', `%${filters.location}%`);
+        if (filters) {
+          if (filters.location) {
+            query = query.ilike('location', `%${filters.location}%`);
+          }
+          if (filters.propertyType && filters.propertyType !== 'All types') {
+            query = query.eq('property_type', filters.propertyType);
+          }
+          if (filters.priceRange) {
+            query = query
+              .gte('price_per_night', filters.priceRange[0])
+              .lte('price_per_night', filters.priceRange[1]);
+          }
+          if (filters.minRating > 0) {
+            query = query.gte('rating', filters.minRating);
+          }
+          if (filters.amenities && filters.amenities.length > 0) {
+            query = query.contains('amenities', filters.amenities);
+          }
+          if (filters.guests > 1) {
+            query = query.gte('max_guests', filters.guests);
+          }
         }
-        if (filters.propertyType && filters.propertyType !== 'All types') {
-          query = query.eq('property_type', filters.propertyType);
-        }
-        if (filters.priceRange) {
-          query = query
-            .gte('price_per_night', filters.priceRange[0])
-            .lte('price_per_night', filters.priceRange[1]);
-        }
-        if (filters.minRating > 0) {
-          query = query.gte('rating', filters.minRating);
-        }
-        if (filters.amenities && filters.amenities.length > 0) {
-          query = query.contains('amenities', filters.amenities);
-        }
-        if (filters.guests > 1) {
-          query = query.gte('max_guests', filters.guests);
-        }
-      }
 
-      if (selectedCategory) {
-        query = query.eq('property_type', selectedCategory);
-      }
+        if (selectedCategory) {
+          query = query.eq('property_type', selectedCategory);
+        }
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("Error fetching properties:", error);
-        throw error;
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching properties:", error);
+          throw error;
+        }
+        
+        console.log("Fetched properties:", data?.length || 0);
+        return data as Property[];
+      } catch (err) {
+        console.error("Failed to fetch properties:", err);
+        throw err;
       }
-      
-      console.log("Fetched properties:", data);
-      return data as Property[];
     },
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -87,5 +95,5 @@ export function useProperties(filters: PropertyFilters | null, selectedCategory:
     }
   }, [error, toast]);
 
-  return { properties, isLoading, error, refetch };
+  return { properties: properties || [], isLoading, error, refetch };
 }
