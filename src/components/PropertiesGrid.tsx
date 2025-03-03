@@ -70,7 +70,7 @@ export const PropertiesGrid = ({
     fetchSession();
   }, []);
 
-  // Initial fetch of availability status
+  // Fetch availability status for all properties
   useEffect(() => {
     const checkAvailability = async () => {
       if (!properties || properties.length === 0) return;
@@ -114,68 +114,10 @@ export const PropertiesGrid = ({
         }
       });
       
-      console.log("Initial availability status:", availabilityStatus);
       setAvailabilityMap(availabilityStatus);
     };
     
     checkAvailability();
-  }, [properties]);
-
-  // Subscribe to real-time booking updates
-  useEffect(() => {
-    if (!properties || properties.length === 0) return;
-    
-    // Set up real-time listener for new bookings
-    const channel = supabase
-      .channel('public:bookings')
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'bookings',
-          filter: 'status=eq.confirmed'
-        }, 
-        (payload) => {
-          console.log("New booking detected:", payload);
-          
-          // Update availability map when a new booking is created
-          const booking = payload.new as {
-            property_id: string;
-            check_in: string;
-            check_out: string;
-          };
-          
-          if (booking && booking.property_id) {
-            const today = new Date();
-            const nextWeek = addDays(today, 7);
-            const checkIn = new Date(booking.check_in);
-            const checkOut = new Date(booking.check_out);
-            
-            // If the new booking affects a property's availability in the next week
-            if (
-              (checkIn <= nextWeek && checkOut >= today) ||
-              isWithinInterval(today, { start: checkIn, end: checkOut }) ||
-              isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
-            ) {
-              setAvailabilityMap(prevMap => ({
-                ...prevMap,
-                [booking.property_id]: false
-              }));
-              
-              console.log(`Property ${booking.property_id} marked as unavailable due to new booking`);
-              
-              toast({
-                title: "Property Unavailable",
-                description: "A property was just booked and is now unavailable for the selected dates.",
-              });
-            }
-          }
-        })
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [properties]);
 
   const handleDelete = async (id: string) => {
@@ -297,10 +239,18 @@ export const PropertiesGrid = ({
             {properties.map((property) => (
               isAdmin ? renderAdminView(property) : (
                 <div key={property.id} className="relative">
-                  <PropertyCard 
-                    property={property} 
-                    isAvailable={availabilityMap[property.id] !== false}
-                  />
+                  <PropertyCard property={property} />
+                  {/* Only show delete button if user is admin and they own the property */}
+                  {isAdmin && property.owner_id === currentUserId && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 z-10"
+                      onClick={() => handleDelete(property.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               )
             ))}

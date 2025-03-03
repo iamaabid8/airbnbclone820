@@ -17,13 +17,7 @@ type Property = {
   property_type: string;
 };
 
-export const PropertyCard = ({ 
-  property, 
-  isAvailable = true 
-}: { 
-  property: Property; 
-  isAvailable?: boolean 
-}) => {
+export const PropertyCard = ({ property }: { property: Property }) => {
   const defaultImage = "https://images.unsplash.com/photo-1487958449943-2429e8be8625";
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -34,6 +28,10 @@ export const PropertyCard = ({
 
   // Format price consistently using Indian locale and ₹ symbol
   const formattedPrice = property.price_per_night.toLocaleString('en-IN');
+
+  // For this example, we'll consider properties available (in reality would need booking data)
+  // In a real implementation, you'd check booking dates against today's date
+  const isAvailable = true;
 
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
