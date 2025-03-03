@@ -1,7 +1,7 @@
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { type PropertyFilters } from "@/components/PropertySearch";
 import { Navigation } from "@/components/Navigation";
@@ -17,8 +17,14 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin } = useAuth();
-  const { properties, isLoading, refetch } = useProperties(filters, selectedCategory);
+  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { properties, isLoading: propertiesLoading, refetch } = useProperties(filters, selectedCategory);
+
+  // Log key state variables to help with debugging
+  useEffect(() => {
+    console.log("Auth state:", { user: !!user, isAdmin, authLoading });
+    console.log("Properties state:", { count: properties?.length, propertiesLoading });
+  }, [user, isAdmin, authLoading, properties, propertiesLoading]);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +57,9 @@ const Index = () => {
   const handleDeleteProperty = () => {
     refetch();
   };
+
+  // Combined loading state
+  const isLoading = authLoading || propertiesLoading;
 
   return (
     <div className="min-h-screen w-full flex flex-col">
