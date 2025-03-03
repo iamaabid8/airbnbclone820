@@ -344,7 +344,7 @@ const Profile = () => {
                           </p>
                           <div className="flex items-center justify-between">
                             <span className="text-airbnb-dark font-semibold">
-                              ${property.price_per_night} per night
+                              ₹{property.price_per_night.toLocaleString('en-IN')} per night
                             </span>
                             <Button variant="outline">Edit Property</Button>
                           </div>
@@ -380,7 +380,7 @@ const Profile = () => {
                           </p>
                           <div className="flex items-center justify-between">
                             <span className="text-airbnb-dark font-semibold">
-                              ${booking.total_price} total
+                              ₹{booking.total_price.toLocaleString('en-IN')} total
                             </span>
                             <div className="flex items-center space-x-2">
                               <span className={`px-3 py-1 rounded-full text-sm ${
