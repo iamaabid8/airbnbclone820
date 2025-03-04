@@ -1,4 +1,3 @@
-
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
@@ -46,7 +45,6 @@ export const PropertiesGrid = ({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [availabilityMap, setAvailabilityMap] = useState<Record<string, boolean>>({});
 
-  // Fetch the current user session when component mounts
   useEffect(() => {
     const fetchSession = async () => {
       try {
@@ -56,7 +54,6 @@ export const PropertiesGrid = ({
           return;
         }
         
-        // Set the user ID if a session exists
         if (data.session) {
           setCurrentUserId(data.session.user.id);
         } else {
@@ -70,7 +67,6 @@ export const PropertiesGrid = ({
     fetchSession();
   }, []);
 
-  // Fetch availability status for all properties
   useEffect(() => {
     const checkAvailability = async () => {
       if (!properties || properties.length === 0) return;
@@ -79,7 +75,6 @@ export const PropertiesGrid = ({
       const today = new Date();
       const nextWeek = addDays(today, 7);
       
-      // Get all bookings for the properties
       const { data: bookings, error } = await supabase
         .from('bookings')
         .select('property_id, check_in, check_out')
@@ -91,20 +86,16 @@ export const PropertiesGrid = ({
         return;
       }
       
-      // Create availability map
       const availabilityStatus: Record<string, boolean> = {};
       
-      // Initialize all properties as available
       propertyIds.forEach(id => {
         availabilityStatus[id] = true;
       });
       
-      // Check for bookings in the next week
       bookings?.forEach(booking => {
         const checkIn = new Date(booking.check_in);
         const checkOut = new Date(booking.check_out);
         
-        // If booking overlaps with next week, mark property as unavailable
         if (
           (checkIn <= nextWeek && checkOut >= today) ||
           isWithinInterval(today, { start: checkIn, end: checkOut }) ||
@@ -147,7 +138,6 @@ export const PropertiesGrid = ({
   };
 
   const renderAdminView = (property: Property) => {
-    // Format price consistently using Indian locale and ₹ symbol
     const formattedPrice = property.price_per_night.toLocaleString('en-IN');
     const isAvailable = availabilityMap[property.id] !== false;
     
@@ -222,7 +212,7 @@ export const PropertiesGrid = ({
     <section className="py-20 px-6 bg-gray-50">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold text-airbnb-dark mb-12">
-          {filters ? 'Search Results' : selectedCategory ? `${selectedCategory}` : 'Featured places to stay'}
+          {filters?.location ? `Properties in ${filters.location}` : selectedCategory ? `${selectedCategory}` : 'Featured places to stay'}
         </h2>
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6">
@@ -240,7 +230,6 @@ export const PropertiesGrid = ({
               isAdmin ? renderAdminView(property) : (
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
-                  {/* Only show delete button if user is admin and they own the property */}
                   {isAdmin && property.owner_id === currentUserId && (
                     <Button
                       variant="destructive"
@@ -259,9 +248,9 @@ export const PropertiesGrid = ({
           <div className="text-center py-12">
             <ImageOff className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <p className="text-lg text-gray-600">No properties found</p>
-            {filters && filters.location && (
+            {filters?.location && (
               <p className="text-gray-500 mt-2">
-                Try broadening your search criteria or checking different locations
+                Try searching for a different location
               </p>
             )}
           </div>

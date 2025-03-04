@@ -30,7 +30,7 @@ type Property = {
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [filters, setFilters] = useState<PropertyFilters | null>(null);
+  const [searchLocation, setSearchLocation] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -70,9 +70,9 @@ const Index = () => {
   }, []);
 
   const { data: properties, isLoading, refetch } = useQuery({
-    queryKey: ['properties', filters, selectedCategory],
+    queryKey: ['properties', searchLocation, selectedCategory],
     queryFn: async () => {
-      console.log("Fetching properties with filters:", filters);
+      console.log("Fetching properties with location:", searchLocation);
       console.log("Selected category:", selectedCategory);
       
       let query = supabase
@@ -80,29 +80,8 @@ const Index = () => {
         .select('*')
         .gt('price_per_night', 0);
 
-      if (filters) {
-        if (filters.location && filters.location.trim() !== '') {
-          query = query.or(`location.ilike.%${filters.location}%,location.ilike.%${filters.location.toLowerCase()}%`);
-        }
-        if (filters.propertyType && filters.propertyType !== 'All types') {
-          query = query.eq('property_type', filters.propertyType);
-        }
-        if (filters.priceRange && filters.priceRange.length === 2) {
-          query = query
-            .gte('price_per_night', filters.priceRange[0])
-            .lte('price_per_night', filters.priceRange[1]);
-        }
-        if (filters.minRating > 0) {
-          query = query.gte('rating', filters.minRating);
-        }
-        if (filters.amenities && filters.amenities.length > 0) {
-          filters.amenities.forEach(amenity => {
-            query = query.contains('amenities', [amenity]);
-          });
-        }
-        if (filters.guests && filters.guests > 1) {
-          query = query.gte('max_guests', filters.guests);
-        }
+      if (searchLocation && searchLocation.trim() !== '') {
+        query = query.ilike('location', `%${searchLocation.trim()}%`);
       }
 
       if (selectedCategory) {
@@ -150,21 +129,21 @@ const Index = () => {
     }
   };
 
-  const handleSearch = (newFilters: PropertyFilters) => {
-    console.log("Search triggered with filters:", newFilters);
-    setFilters(newFilters);
+  const handleSearch = (filters: PropertyFilters) => {
+    console.log("Search triggered with location:", filters.location);
+    setSearchLocation(filters.location);
     setSelectedCategory(null);
     
     toast({
       title: "Search applied",
-      description: `Searching for properties in ${newFilters.location}`,
+      description: `Searching for properties in ${filters.location}`,
     });
   };
 
   const handleCategorySelect = (category: string) => {
     console.log("Category selected:", category);
     setSelectedCategory(category || null);
-    setFilters(null);
+    setSearchLocation(null);
     
     toast({
       title: category ? "Category selected" : "Categories cleared",
@@ -202,7 +181,7 @@ const Index = () => {
         properties={properties}
         isLoading={isLoading}
         selectedCategory={selectedCategory}
-        filters={filters}
+        filters={searchLocation ? { location: searchLocation } : null}
         isAdmin={isAdmin}
         onDelete={handleDeleteProperty}
       />
