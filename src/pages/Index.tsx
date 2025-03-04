@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -97,7 +96,6 @@ const Index = () => {
           query = query.gte('rating', filters.minRating);
         }
         if (filters.amenities && filters.amenities.length > 0) {
-          // For amenities which is an array, we need to check if any of the items exist in the array
           filters.amenities.forEach(amenity => {
             query = query.contains('amenities', [amenity]);
           });
@@ -108,7 +106,6 @@ const Index = () => {
       }
 
       if (selectedCategory) {
-        // Category names don't match property_type directly, map them
         const categoryToPropertyType: Record<string, string> = {
           "Beach Houses": "villa",
           "Mountain Cabins": "cabin",
@@ -156,9 +153,8 @@ const Index = () => {
   const handleSearch = (newFilters: PropertyFilters) => {
     console.log("Search triggered with filters:", newFilters);
     setFilters(newFilters);
-    setSelectedCategory(null); // Reset category when searching
+    setSelectedCategory(null);
     
-    // Add a toast notification to confirm search
     toast({
       title: "Search applied",
       description: `Searching for properties in ${newFilters.location}`,
@@ -168,9 +164,8 @@ const Index = () => {
   const handleCategorySelect = (category: string) => {
     console.log("Category selected:", category);
     setSelectedCategory(category);
-    setFilters(null); // Reset filters when selecting a category
+    setFilters(null);
     
-    // Add a toast notification to confirm category selection
     toast({
       title: "Category selected",
       description: `Browsing ${category}`,

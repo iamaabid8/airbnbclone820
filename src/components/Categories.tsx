@@ -27,7 +27,7 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
   };
 
   const handleCategoryClick = (category: string) => {
-    // If already selected, deselect it
+    // If already selected, deselect it by passing empty string
     if (selectedCategory === category) {
       onCategorySelect('');
     } else {
