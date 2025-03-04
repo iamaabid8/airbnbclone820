@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -72,19 +73,22 @@ const Index = () => {
   const { data: properties, isLoading, refetch } = useQuery({
     queryKey: ['properties', filters, selectedCategory],
     queryFn: async () => {
+      console.log("Fetching properties with filters:", filters);
+      console.log("Selected category:", selectedCategory);
+      
       let query = supabase
         .from('properties')
         .select('*')
         .gt('price_per_night', 0);
 
       if (filters) {
-        if (filters.location) {
+        if (filters.location && filters.location.trim() !== '') {
           query = query.ilike('location', `%${filters.location}%`);
         }
         if (filters.propertyType && filters.propertyType !== 'All types') {
           query = query.eq('property_type', filters.propertyType);
         }
-        if (filters.priceRange) {
+        if (filters.priceRange && filters.priceRange.length === 2) {
           query = query
             .gte('price_per_night', filters.priceRange[0])
             .lte('price_per_night', filters.priceRange[1]);
@@ -93,22 +97,43 @@ const Index = () => {
           query = query.gte('rating', filters.minRating);
         }
         if (filters.amenities && filters.amenities.length > 0) {
-          query = query.contains('amenities', filters.amenities);
+          // For amenities which is an array, we need to check if any of the items exist in the array
+          filters.amenities.forEach(amenity => {
+            query = query.contains('amenities', [amenity]);
+          });
         }
-        if (filters.guests > 1) {
+        if (filters.guests && filters.guests > 1) {
           query = query.gte('max_guests', filters.guests);
         }
       }
 
       if (selectedCategory) {
-        query = query.eq('property_type', selectedCategory);
+        // Category names don't match property_type directly, map them
+        const categoryToPropertyType: Record<string, string> = {
+          "Beach Houses": "villa",
+          "Mountain Cabins": "cabin",
+          "Luxury Villas": "villa",
+          "City Apartments": "apartment"
+        };
+        
+        const propertyType = categoryToPropertyType[selectedCategory];
+        if (propertyType) {
+          query = query.eq('property_type', propertyType);
+        }
       }
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching properties:", error);
+        throw error;
+      }
+      
+      console.log("Properties fetched:", data?.length);
       return data as Property[];
     },
+    enabled: true,
+    refetchOnWindowFocus: false,
   });
 
   const handleLogout = async () => {
@@ -129,14 +154,27 @@ const Index = () => {
   };
 
   const handleSearch = (newFilters: PropertyFilters) => {
-    console.log("Search filters:", newFilters);
+    console.log("Search triggered with filters:", newFilters);
     setFilters(newFilters);
-    setSelectedCategory(null);
+    setSelectedCategory(null); // Reset category when searching
+    
+    // Add a toast notification to confirm search
+    toast({
+      title: "Search applied",
+      description: `Searching for properties in ${newFilters.location}`,
+    });
   };
 
   const handleCategorySelect = (category: string) => {
+    console.log("Category selected:", category);
     setSelectedCategory(category);
-    setFilters(null);
+    setFilters(null); // Reset filters when selecting a category
+    
+    // Add a toast notification to confirm category selection
+    toast({
+      title: "Category selected",
+      description: `Browsing ${category}`,
+    });
   };
 
   const handleDeleteProperty = () => {

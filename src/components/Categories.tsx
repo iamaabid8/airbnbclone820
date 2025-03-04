@@ -26,6 +26,15 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
     e.currentTarget.src = fallbackImages.default;
   };
 
+  const handleCategoryClick = (category: string) => {
+    // If already selected, deselect it
+    if (selectedCategory === category) {
+      onCategorySelect('');
+    } else {
+      onCategorySelect(category);
+    }
+  };
+
   return (
     <section className="py-20 px-6">
       <div className="container mx-auto">
@@ -36,10 +45,14 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
           {Object.entries(categoryImages).map(([category, image]) => (
             <div
               key={category}
-              className="group cursor-pointer"
-              onClick={() => onCategorySelect(category)}
+              className={`group cursor-pointer transition-all duration-300 ${
+                selectedCategory === category ? 'scale-105 shadow-lg' : ''
+              }`}
+              onClick={() => handleCategoryClick(category)}
             >
-              <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden relative">
+              <div className={`aspect-square rounded-xl overflow-hidden relative ${
+                selectedCategory === category ? 'ring-2 ring-airbnb-primary' : 'bg-gray-200'
+              }`}>
                 <img
                   src={image}
                   alt={category}
@@ -47,7 +60,7 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
-              <h3 className={`text-lg font-semibold text-center ${
+              <h3 className={`text-lg font-semibold text-center mt-2 ${
                 selectedCategory === category ? 'text-airbnb-primary' : 'text-airbnb-dark'
               }`}>
                 {category}

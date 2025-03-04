@@ -60,7 +60,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
   const { toast } = useToast();
 
   const handleSearch = () => {
-    if (!filters.location) {
+    if (!filters.location.trim()) {
       toast({
         title: "Location required",
         description: "Please enter a location to search",
@@ -68,6 +68,8 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
       });
       return;
     }
+    
+    console.log("Submitting search with filters:", filters);
     onSearch(filters);
     setShowFilters(false);
   };
