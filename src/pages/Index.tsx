@@ -82,7 +82,7 @@ const Index = () => {
 
       if (filters) {
         if (filters.location && filters.location.trim() !== '') {
-          query = query.ilike('location', `%${filters.location}%`);
+          query = query.or(`location.ilike.%${filters.location}%,location.ilike.%${filters.location.toLowerCase()}%`);
         }
         if (filters.propertyType && filters.propertyType !== 'All types') {
           query = query.eq('property_type', filters.propertyType);
@@ -163,12 +163,12 @@ const Index = () => {
 
   const handleCategorySelect = (category: string) => {
     console.log("Category selected:", category);
-    setSelectedCategory(category);
+    setSelectedCategory(category || null);
     setFilters(null);
     
     toast({
-      title: "Category selected",
-      description: `Browsing ${category}`,
+      title: category ? "Category selected" : "Categories cleared",
+      description: category ? `Browsing ${category}` : "Showing all properties",
     });
   };
 

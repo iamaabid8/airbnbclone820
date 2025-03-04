@@ -259,6 +259,11 @@ export const PropertiesGrid = ({
           <div className="text-center py-12">
             <ImageOff className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <p className="text-lg text-gray-600">No properties found</p>
+            {filters && filters.location && (
+              <p className="text-gray-500 mt-2">
+                Try broadening your search criteria or checking different locations
+              </p>
+            )}
           </div>
         )}
       </div>
