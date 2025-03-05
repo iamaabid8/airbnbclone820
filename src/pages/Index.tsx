@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { Categories } from "@/components/Categories";
 import { PropertiesGrid } from "@/components/PropertiesGrid";
-import { Facebook, Twitter, Instagram, Heart } from "lucide-react";
+import Footer from "@/components/Footer";
 
 type Property = {
   id: string;
@@ -186,34 +186,7 @@ const Index = () => {
         onDelete={handleDeleteProperty}
       />
 
-      <footer className="bg-gray-100 mt-auto py-6">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
-            </div>
-            
-            <div className="flex space-x-6 text-sm">
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary">Privacy</a>
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary">Terms</a>
-              <a href="#" className="text-gray-600 hover:text-airbnb-primary">Support</a>
-            </div>
-            
-            <div className="flex items-center text-sm text-gray-600 mt-4 md:mt-0">
-              <span>© {new Date().getFullYear()} Airbnb Clone</span>
-              <Heart className="h-3 w-3 mx-1 text-airbnb-primary" />
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
