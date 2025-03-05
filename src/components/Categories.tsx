@@ -1,7 +1,10 @@
 
 import { ImageOff } from "lucide-react";
 
-const fallbackImages = {
+type CategoryKey = "Beach Houses" | "Mountain Cabins" | "Luxury Villas" | "City Apartments";
+type CategoryImageMap = Record<CategoryKey, string>;
+
+const fallbackImages: CategoryImageMap & { default: string } = {
   "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
   "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
   "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
@@ -9,7 +12,7 @@ const fallbackImages = {
   default: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
 };
 
-const categoryImages = {
+const categoryImages: CategoryImageMap = {
   "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
   "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
   "Luxury Villas": "https://images.unsplash.com/photo-1487958449943-2429e8be8625",
