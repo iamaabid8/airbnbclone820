@@ -9,25 +9,33 @@ const Footer = () => {
         {/* Social Media Icons */}
         <div className="flex justify-center space-x-4 mb-6">
           <a 
-            href="#" 
+            href="https://facebook.com" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black hover:bg-gray-200 transition-colors"
           >
             <Facebook size={20} />
           </a>
           <a 
-            href="#" 
+            href="https://instagram.com" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black hover:bg-gray-200 transition-colors"
           >
             <Instagram size={20} />
           </a>
           <a 
-            href="#" 
+            href="https://twitter.com" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black hover:bg-gray-200 transition-colors"
           >
             <Twitter size={20} />
           </a>
           <a 
-            href="#" 
+            href="https://youtube.com" 
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black hover:bg-gray-200 transition-colors"
           >
             <Youtube size={20} />
@@ -35,7 +43,7 @@ const Footer = () => {
         </div>
         
         {/* Navigation Links */}
-        <div className="flex justify-center space-x-8 mb-6">
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-6">
           <Link to="/" className="text-white hover:text-gray-300 transition-colors">
             Home
           </Link>
@@ -45,9 +53,17 @@ const Footer = () => {
           <Link to="/about" className="text-white hover:text-gray-300 transition-colors">
             About
           </Link>
-          <Link to="/contact" className="text-white hover:text-gray-300 transition-colors">
-            Contact Us
-          </Link>
+          <div className="flex flex-col items-center">
+            <Link to="/contact" className="text-white hover:text-gray-300 transition-colors">
+              Contact Us
+            </Link>
+            <a href="mailto:wanderhome@gmail.com" className="text-sm text-gray-400 hover:text-white transition-colors">
+              wanderhome@gmail.com
+            </a>
+            <a href="tel:0221456777" className="text-sm text-gray-400 hover:text-white transition-colors">
+              0221456777
+            </a>
+          </div>
           <Link to="/team" className="text-white hover:text-gray-300 transition-colors">
             Our Team
           </Link>
@@ -55,7 +71,7 @@ const Footer = () => {
         
         {/* Copyright */}
         <div className="text-sm text-gray-400 border-t border-gray-800 pt-4 w-full text-center">
-          <p>Copyright ©{new Date().getFullYear()}, Designed by FAHEEM</p>
+          <p>Copyright ©{new Date().getFullYear()}, Designed by AABID</p>
         </div>
       </div>
     </footer>
