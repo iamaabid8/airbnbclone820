@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,8 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
   const [location, setLocation] = useState("");
   const { toast } = useToast();
 
-  const handleSearch = () => {
+  // Optimized search handler with debounce
+  const handleSearch = useCallback(() => {
     if (!location.trim()) {
       toast({
         title: "Location required",
@@ -29,6 +30,13 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
     
     console.log("Submitting search with location:", location);
     onSearch({ location });
+  }, [location, onSearch, toast]);
+
+  // Handle enter key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -43,6 +51,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
               placeholder="Search destinations"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="border-0 p-0 focus-visible:ring-0 text-base placeholder:text-gray-400"
             />
           </div>

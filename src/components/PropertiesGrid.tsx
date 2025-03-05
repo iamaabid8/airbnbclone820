@@ -1,10 +1,11 @@
+
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
 import { Button } from "./ui/button";
 import { toast } from "./ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { AvailabilityBadge } from "./property/AvailabilityBadge";
 import { addDays, isWithinInterval } from "date-fns";
 
@@ -33,6 +34,88 @@ interface PropertiesGridProps {
   isAdmin?: boolean;
   onDelete?: (id: string) => void;
 }
+
+// Memoized property card for better performance
+const MemoizedPropertyCard = memo(PropertyCard);
+
+// Memoized admin view component
+const AdminPropertyCard = memo(({ 
+  property, 
+  isAvailable, 
+  handleDelete 
+}: { 
+  property: Property; 
+  isAvailable: boolean; 
+  handleDelete: (id: string) => void;
+}) => {
+  const formattedPrice = property.price_per_night.toLocaleString('en-IN');
+  
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex gap-4">
+        <div className="w-40 h-32 relative">
+          <img
+            src={property.images?.[0] || "/placeholder.svg"}
+            alt={property.title}
+            className="w-full h-full object-cover rounded-lg"
+          />
+          <AvailabilityBadge 
+            isAvailable={isAvailable} 
+            className="top-1 left-1 text-xs px-2 py-0.5"
+          />
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{property.title}</h3>
+              <p className="text-sm text-gray-500">{property.location}</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={() => handleDelete(property.id)}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+            </div>
+          </div>
+          <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Price:</span>
+              <br />
+              ₹{formattedPrice}/night
+            </div>
+            <div>
+              <span className="font-medium">Type:</span>
+              <br />
+              {property.property_type}
+            </div>
+            <div>
+              <span className="font-medium">Rooms:</span>
+              <br />
+              {property.bedrooms}B {property.bathrooms}BA
+            </div>
+            <div>
+              <span className="font-medium">Guests:</span>
+              <br />
+              Max {property.max_guests}
+            </div>
+          </div>
+          <div className="mt-2">
+            <span className="text-sm font-medium">Amenities:</span>
+            <p className="text-sm text-gray-500">
+              {property.amenities?.slice(0, 5).join(", ")}
+              {property.amenities && property.amenities.length > 5 ? "..." : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export const PropertiesGrid = ({ 
   properties, 
@@ -75,43 +158,47 @@ export const PropertiesGrid = ({
       const today = new Date();
       const nextWeek = addDays(today, 7);
       
-      const { data: bookings, error } = await supabase
-        .from('bookings')
-        .select('property_id, check_in, check_out')
-        .in('property_id', propertyIds)
-        .eq('status', 'confirmed');
-      
-      if (error) {
-        console.error("Error fetching bookings:", error);
-        return;
-      }
-      
-      const availabilityStatus: Record<string, boolean> = {};
-      
-      propertyIds.forEach(id => {
-        availabilityStatus[id] = true;
-      });
-      
-      bookings?.forEach(booking => {
-        const checkIn = new Date(booking.check_in);
-        const checkOut = new Date(booking.check_out);
+      try {
+        const { data: bookings, error } = await supabase
+          .from('bookings')
+          .select('property_id, check_in, check_out')
+          .in('property_id', propertyIds)
+          .eq('status', 'confirmed');
         
-        if (
-          (checkIn <= nextWeek && checkOut >= today) ||
-          isWithinInterval(today, { start: checkIn, end: checkOut }) ||
-          isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
-        ) {
-          availabilityStatus[booking.property_id] = false;
+        if (error) {
+          console.error("Error fetching bookings:", error);
+          return;
         }
-      });
-      
-      setAvailabilityMap(availabilityStatus);
+        
+        const availabilityStatus: Record<string, boolean> = {};
+        
+        propertyIds.forEach(id => {
+          availabilityStatus[id] = true;
+        });
+        
+        bookings?.forEach(booking => {
+          const checkIn = new Date(booking.check_in);
+          const checkOut = new Date(booking.check_out);
+          
+          if (
+            (checkIn <= nextWeek && checkOut >= today) ||
+            isWithinInterval(today, { start: checkIn, end: checkOut }) ||
+            isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
+          ) {
+            availabilityStatus[booking.property_id] = false;
+          }
+        });
+        
+        setAvailabilityMap(availabilityStatus);
+      } catch (error) {
+        console.error("Error in availability check:", error);
+      }
     };
     
     checkAvailability();
   }, [properties]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
         .from('properties')
@@ -135,78 +222,7 @@ export const PropertiesGrid = ({
         variant: "destructive",
       });
     }
-  };
-
-  const renderAdminView = (property: Property) => {
-    const formattedPrice = property.price_per_night.toLocaleString('en-IN');
-    const isAvailable = availabilityMap[property.id] !== false;
-    
-    return (
-      <div key={property.id} className="bg-white rounded-lg shadow p-6">
-        <div className="flex gap-4">
-          <div className="w-40 h-32 relative">
-            <img
-              src={property.images?.[0] || "/placeholder.svg"}
-              alt={property.title}
-              className="w-full h-full object-cover rounded-lg"
-            />
-            <AvailabilityBadge 
-              isAvailable={isAvailable} 
-              className="top-1 left-1 text-xs px-2 py-0.5"
-            />
-          </div>
-          <div className="flex-1">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{property.title}</h3>
-                <p className="text-sm text-gray-500">{property.location}</p>
-              </div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => handleDelete(property.id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
-              </div>
-            </div>
-            <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Price:</span>
-                <br />
-                ₹{formattedPrice}/night
-              </div>
-              <div>
-                <span className="font-medium">Type:</span>
-                <br />
-                {property.property_type}
-              </div>
-              <div>
-                <span className="font-medium">Rooms:</span>
-                <br />
-                {property.bedrooms}B {property.bathrooms}BA
-              </div>
-              <div>
-                <span className="font-medium">Guests:</span>
-                <br />
-                Max {property.max_guests}
-              </div>
-            </div>
-            <div className="mt-2">
-              <span className="text-sm font-medium">Amenities:</span>
-              <p className="text-sm text-gray-500">
-                {property.amenities?.slice(0, 5).join(", ")}
-                {property.amenities && property.amenities.length > 5 ? "..." : ""}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  }, [onDelete]);
 
   return (
     <section className="py-20 px-6 bg-gray-50">
@@ -215,7 +231,7 @@ export const PropertiesGrid = ({
           {filters?.location ? `Properties in ${filters.location}` : selectedCategory ? `${selectedCategory}` : 'Featured places to stay'}
         </h2>
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((item) => (
               <div key={item} className="animate-pulse">
                 <div className="h-40 bg-gray-200 rounded-xl mb-4" />
@@ -227,9 +243,16 @@ export const PropertiesGrid = ({
         ) : properties && properties.length > 0 ? (
           <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {properties.map((property) => (
-              isAdmin ? renderAdminView(property) : (
+              isAdmin ? (
+                <AdminPropertyCard 
+                  key={property.id}
+                  property={property}
+                  isAvailable={availabilityMap[property.id] !== false}
+                  handleDelete={handleDelete}
+                />
+              ) : (
                 <div key={property.id} className="relative">
-                  <PropertyCard property={property} />
+                  <MemoizedPropertyCard property={property} />
                   {isAdmin && property.owner_id === currentUserId && (
                     <Button
                       variant="destructive"
