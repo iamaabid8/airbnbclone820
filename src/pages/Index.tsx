@@ -95,9 +95,6 @@ const Index = () => {
         if (filters.amenities && filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
         }
-        if (filters.guests > 1) {
-          query = query.gte('max_guests', filters.guests);
-        }
       }
 
       if (selectedCategory) {
