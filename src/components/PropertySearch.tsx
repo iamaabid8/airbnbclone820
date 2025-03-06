@@ -59,33 +59,17 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
   });
   const { toast } = useToast();
 
-  // Automatically search when location changes (with debounce)
-  useEffect(() => {
-    if (filters.location) {
-      const timer = setTimeout(() => {
-        onSearch(filters);
-      }, 500); // 500ms debounce to avoid too many searches while typing
-      
-      return () => clearTimeout(timer);
-    }
-  }, [filters.location, onSearch]);
-
-  // Handle location change with validation
-  const handleLocationChange = (value: string) => {
-    setFilters({ ...filters, location: value });
-    if (!value) {
+  // Handle search button click
+  const handleSearch = () => {
+    if (!filters.location) {
       toast({
         title: "Location required",
         description: "Please enter a location to search",
         variant: "destructive",
       });
+      return;
     }
-  };
-
-  // Apply advanced filters
-  const applyFilters = () => {
     onSearch(filters);
-    setShowFilters(false);
   };
 
   return (
@@ -100,7 +84,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
               type="text"
               placeholder="Search destinations"
               value={filters.location}
-              onChange={(e) => handleLocationChange(e.target.value)}
+              onChange={(e) => setFilters({ ...filters, location: e.target.value })}
               className="border-0 p-0 focus-visible:ring-0 text-sm placeholder:text-muted-foreground"
             />
           </div>
@@ -114,10 +98,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
             <Input
               type="date"
               value={filters.checkIn}
-              onChange={(e) => {
-                setFilters({ ...filters, checkIn: e.target.value });
-                if (filters.location) onSearch({ ...filters, checkIn: e.target.value });
-              }}
+              onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })}
               className="border-0 p-0 focus-visible:ring-0 text-sm"
             />
           </div>
@@ -131,10 +112,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
             <Input
               type="date"
               value={filters.checkOut}
-              onChange={(e) => {
-                setFilters({ ...filters, checkOut: e.target.value });
-                if (filters.location) onSearch({ ...filters, checkOut: e.target.value });
-              }}
+              onChange={(e) => setFilters({ ...filters, checkOut: e.target.value })}
               className="border-0 p-0 focus-visible:ring-0 text-sm"
             />
           </div>
@@ -150,18 +128,14 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
                 type="number"
                 min="1"
                 value={filters.guests}
-                onChange={(e) => {
-                  const newGuests = parseInt(e.target.value);
-                  setFilters({ ...filters, guests: newGuests });
-                  if (filters.location) onSearch({ ...filters, guests: newGuests });
-                }}
+                onChange={(e) => setFilters({ ...filters, guests: parseInt(e.target.value) })}
                 className="border-0 p-0 focus-visible:ring-0 text-sm w-16"
                 placeholder="Guests"
               />
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Dialog open={showFilters} onOpenChange={setShowFilters}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -245,10 +219,18 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <Button onClick={applyFilters}>Apply Filters</Button>
+                  <Button onClick={() => {
+                    onSearch(filters);
+                    setShowFilters(false);
+                  }}>Apply Filters</Button>
                 </div>
               </DialogContent>
             </Dialog>
+
+            <Button onClick={handleSearch} className="rounded-full">
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
           </div>
         </div>
       </div>
