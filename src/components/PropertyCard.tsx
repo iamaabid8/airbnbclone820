@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ImageOff } from "lucide-react";
-import { AvailabilityBadge } from "./property/AvailabilityBadge";
 
 type Property = {
   id: string;
@@ -26,13 +25,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
 
   const imageUrl = property.images?.[0] || defaultImage;
 
-  // Format price consistently using Indian locale and ₹ symbol
-  const formattedPrice = property.price_per_night.toLocaleString('en-IN');
-
-  // For this example, we'll consider properties available (in reality would need booking data)
-  // In a real implementation, you'd check booking dates against today's date
-  const isAvailable = true;
-
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <div className="aspect-video bg-gray-200 relative">
@@ -43,7 +35,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
           onError={handleImageError}
           loading="lazy"
         />
-        <AvailabilityBadge isAvailable={isAvailable} />
         <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark">
           {property.property_type}
         </div>
@@ -77,7 +68,7 @@ export const PropertyCard = ({ property }: { property: Property }) => {
         </div>
         <div className="flex justify-between items-center">
           <p className="text-airbnb-dark">
-            <span className="font-semibold">₹{formattedPrice}</span>
+            <span className="font-semibold">₹{property.price_per_night.toLocaleString('en-IN')}</span>
             <span className="text-sm text-muted-foreground"> / night</span>
           </p>
           <Link to={`/property/${property.id}`}>

@@ -2,9 +2,9 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { format, addDays, parseISO, isWithinInterval } from "date-fns";
+import { format, addDays } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
 import { PropertyHeader } from "@/components/property/PropertyHeader";
 import { PropertyImages } from "@/components/property/PropertyImages";
@@ -15,21 +15,26 @@ const PropertyDetails = () => {
   const { id } = useParams();
   const [guests, setGuests] = useState(1);
   const [dates, setDates] = useState({ checkIn: "", checkOut: "" });
-  const [isPropertyAvailable, setIsPropertyAvailable] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  console.log("Current property ID:", id); // Debug log
+
   const { data: property, isLoading, error } = useQuery({
     queryKey: ['property', id],
     queryFn: async () => {
+      console.log("Fetching property with ID:", id); // Debug log
       const { data, error } = await supabase
         .from('properties')
         .select('*')
         .eq('id', id)
         .single();
 
+      console.log("Supabase response:", { data, error }); // Debug log
+
       if (error) {
+        console.error("Supabase error:", error); // Debug log
         throw error;
       }
       return data;
@@ -37,113 +42,12 @@ const PropertyDetails = () => {
     enabled: !!id,
   });
 
-  // Fetch existing bookings for this property
-  const { data: bookings } = useQuery({
-    queryKey: ['property-bookings', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('check_in, check_out, status')
-        .eq('property_id', id)
-        .eq('status', 'confirmed');
-        
-      if (error) {
-        throw error;
-      }
-      
-      return data;
-    },
-    enabled: !!id,
-  });
-
-  // Check if the property has any bookings in the next 7 days
-  useEffect(() => {
-    if (bookings && bookings.length > 0) {
-      const today = new Date();
-      const nextWeek = addDays(today, 7);
-      
-      // Check if any booking overlaps with the next week
-      const hasUpcomingBooking = bookings.some(booking => {
-        const checkIn = new Date(booking.check_in);
-        const checkOut = new Date(booking.check_out);
-        
-        // Check if booking period overlaps with next week
-        return (
-          (checkIn <= nextWeek && checkOut >= today) ||
-          isWithinInterval(today, { start: checkIn, end: checkOut }) ||
-          isWithinInterval(nextWeek, { start: checkIn, end: checkOut })
-        );
-      });
-      
-      setIsPropertyAvailable(!hasUpcomingBooking);
-    } else {
-      setIsPropertyAvailable(true);
-    }
-  }, [bookings]);
-  
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
       return session;
     },
-  });
-
-  // Check availability mutation with more robust checking
-  const checkAvailabilityMutation = useMutation({
-    mutationFn: async (bookingDates: { checkIn: string; checkOut: string }) => {
-      console.log("Checking availability for dates:", bookingDates);
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('check_in, check_out')
-        .eq('property_id', id)
-        .eq('status', 'confirmed');
-        
-      if (error) {
-        console.error("Error checking availability:", error);
-        throw error;
-      }
-      
-      // Prepare dates for conflict checking
-      const checkInDate = new Date(bookingDates.checkIn);
-      const checkOutDate = new Date(bookingDates.checkOut);
-      
-      console.log("Existing bookings:", data);
-      
-      // Generate array of all dates in the requested booking
-      const requestedDates: string[] = [];
-      const currentDate = new Date(checkInDate);
-      while (currentDate <= checkOutDate) {
-        requestedDates.push(format(currentDate, 'yyyy-MM-dd'));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      // Check if any of the requested dates are already booked
-      for (const booking of data) {
-        const bookedCheckIn = new Date(booking.check_in);
-        const bookedCheckOut = new Date(booking.check_out);
-        
-        // Generate array of all booked dates
-        const bookedDates: string[] = [];
-        const currentBookedDate = new Date(bookedCheckIn);
-        while (currentBookedDate <= bookedCheckOut) {
-          bookedDates.push(format(currentBookedDate, 'yyyy-MM-dd'));
-          currentBookedDate.setDate(currentBookedDate.getDate() + 1);
-        }
-        
-        // Check for overlap between requested dates and booked dates
-        const conflict = requestedDates.some(date => bookedDates.includes(date));
-        
-        if (conflict) {
-          console.log("Booking conflict detected");
-          return { isAvailable: false, conflictDates: bookedDates };
-        }
-      }
-      
-      console.log("Dates are available");
-      return { isAvailable: true };
-    }
   });
 
   const bookingMutation = useMutation({
@@ -154,23 +58,9 @@ const PropertyDetails = () => {
       total_price: number;
       user_id: string;
     }) => {
-      // First check availability
-      const availability = await checkAvailabilityMutation.mutateAsync({
-        checkIn: bookingData.check_in,
-        checkOut: bookingData.check_out
-      });
-      
-      if (!availability.isAvailable) {
-        throw new Error("These dates are no longer available. Please select different dates.");
-      }
-      
-      // If available, proceed with booking
       const { data, error } = await supabase
         .from('bookings')
-        .insert([{
-          ...bookingData,
-          status: 'confirmed' // Auto-confirm the booking
-        }])
+        .insert([bookingData])
         .select()
         .single();
 
@@ -179,9 +69,6 @@ const PropertyDetails = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      // Also invalidate property query to refresh availability data
-      queryClient.invalidateQueries({ queryKey: ['property', id] });
-      
       toast({
         title: "Booking confirmed!",
         description: "Your reservation has been successfully made.",
@@ -238,45 +125,20 @@ const PropertyDetails = () => {
       return;
     }
 
-    // Perform final availability check before processing
-    try {
-      const availabilityResult = await checkAvailabilityMutation.mutateAsync({
-        checkIn: dates.checkIn,
-        checkOut: dates.checkOut
-      });
-      
-      if (!availabilityResult.isAvailable) {
-        toast({
-          title: "Dates unavailable",
-          description: "Selected dates are no longer available. Please choose different dates.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Calculate the total price
-      const numberOfNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-      const totalPrice = numberOfNights * property.price_per_night;
-  
-      // Process the booking
-      bookingMutation.mutate({
-        property_id: property.id,
-        check_in: dates.checkIn,
-        check_out: dates.checkOut,
-        total_price: totalPrice,
-        user_id: session.user.id,
-      });
-    } catch (error) {
-      console.error("Availability check failed:", error);
-      toast({
-        title: "Error",
-        description: "Could not verify availability. Please try again.",
-        variant: "destructive",
-      });
-    }
+    const numberOfNights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+    const totalPrice = numberOfNights * property.price_per_night;
+
+    bookingMutation.mutate({
+      property_id: property.id,
+      check_in: dates.checkIn,
+      check_out: dates.checkOut,
+      total_price: totalPrice,
+      user_id: session.user.id,
+    });
   };
 
   if (isLoading) {
+    console.log("Loading state..."); // Debug log
     return (
       <div className="min-h-screen pt-24 px-6">
         <div className="container mx-auto animate-pulse">
@@ -295,6 +157,7 @@ const PropertyDetails = () => {
   }
 
   if (error || !property) {
+    console.log("No property found for ID:", id); // Debug log
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Property not found</h1>
@@ -325,11 +188,7 @@ const PropertyDetails = () => {
           location={property.location}
         />
 
-        <PropertyImages 
-          images={property.images} 
-          title={property.title} 
-          isAvailable={isPropertyAvailable}
-        />
+        <PropertyImages images={property.images} title={property.title} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="md:col-span-2">
@@ -345,9 +204,8 @@ const PropertyDetails = () => {
               maxGuests={property.max_guests}
               dates={dates}
               guests={guests}
-              isLoading={bookingMutation.isPending || checkAvailabilityMutation.isPending}
+              isLoading={bookingMutation.isPending}
               minDate={tomorrow}
-              propertyId={property.id}
               onDatesChange={setDates}
               onGuestsChange={setGuests}
               onBookingSubmit={handleBooking}
