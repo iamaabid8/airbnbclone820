@@ -46,7 +46,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<PropertyFilters>({
     location: "",
-    priceRange: [0, 1000],
+    priceRange: [0, 25000], // Updated to a more realistic range based on the data
     propertyType: "All types",
     amenities: [],
     minRating: 0,
@@ -96,14 +96,14 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
                 <div className="space-y-4">
                   <Label>Price range per night</Label>
                   <div className="flex items-center justify-between text-sm">
-                    <span>${filters.priceRange[0]}</span>
-                    <span>${filters.priceRange[1]}</span>
+                    <span>₹{filters.priceRange[0]}</span>
+                    <span>₹{filters.priceRange[1]}</span>
                   </div>
                   <Slider
                     value={filters.priceRange}
                     min={0}
-                    max={1000}
-                    step={50}
+                    max={25000}
+                    step={1000}
                     onValueChange={(value) => setFilters({ ...filters, priceRange: value as [number, number] })}
                     className="mt-2"
                   />

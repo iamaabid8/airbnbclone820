@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -74,8 +75,7 @@ const Index = () => {
     queryFn: async () => {
       let query = supabase
         .from('properties')
-        .select('*')
-        .gt('price_per_night', 0);
+        .select('*');
 
       if (filters) {
         if (filters.location) {
@@ -103,7 +103,12 @@ const Index = () => {
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching properties:", error);
+        throw error;
+      }
+      
+      console.log("Fetched properties:", data);
       return data as Property[];
     },
   });
