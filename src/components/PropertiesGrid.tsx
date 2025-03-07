@@ -163,17 +163,7 @@ export const PropertiesGrid = ({
               isAdmin ? renderAdminView(property) : (
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
-                  {/* Show delete button for host on their own properties */}
-                  {(property.owner_id === currentUserId) && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 z-10"
-                      onClick={() => handleDelete(property.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                  {/* Delete button removed - only admin can delete listings */}
                 </div>
               )
             ))}
