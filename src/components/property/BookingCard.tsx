@@ -46,10 +46,11 @@ export const BookingCard = ({
       if (!dates.checkIn || !dates.checkOut) return { available: true };
       
       const { data, error } = await supabase
-        .from('property_availability')
+        .from('bookings')
         .select('*')
         .eq('property_id', propertyId)
-        .or(`start_date.lte.${dates.checkOut},end_date.gte.${dates.checkIn}`);
+        .neq('status', 'canceled')
+        .or(`check_in.lte.${dates.checkOut},check_out.gte.${dates.checkIn}`);
       
       if (error) {
         console.error("Error checking availability:", error);
@@ -76,7 +77,7 @@ export const BookingCard = ({
         {
           event: '*',
           schema: 'public',
-          table: 'property_availability',
+          table: 'bookings',
           filter: `property_id=eq.${propertyId}`
         },
         (payload) => {

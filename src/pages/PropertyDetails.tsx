@@ -1,3 +1,4 @@
+
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,22 @@ const PropertyDetails = () => {
       total_price: number;
       user_id: string;
     }) => {
+      // Check for existing bookings that overlap with these dates
+      const { data: existingBookings, error: checkError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('property_id', bookingData.property_id)
+        .neq('status', 'canceled')
+        .or(`check_in.lte.${bookingData.check_out},check_out.gte.${bookingData.check_in}`);
+        
+      if (checkError) throw checkError;
+      
+      // If there are overlapping bookings, the property is not available
+      if (existingBookings && existingBookings.length > 0) {
+        throw new Error('Property is not available for the selected dates');
+      }
+      
+      // Create the booking
       const { data, error } = await supabase
         .from('bookings')
         .insert([bookingData])
