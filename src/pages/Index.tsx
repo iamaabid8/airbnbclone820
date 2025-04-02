@@ -78,27 +78,32 @@ const Index = () => {
         .select('*');
 
       if (filters) {
-        if (filters.location) {
+        if (filters.location && filters.location.trim() !== '') {
           query = query.ilike('location', `%${filters.location}%`);
         }
+        
+        // Optional filters - only apply if they exist and are meaningful
         if (filters.propertyType && filters.propertyType !== 'All types') {
           query = query.eq('property_type', filters.propertyType);
         }
-        if (filters.priceRange) {
+        
+        if (filters.priceRange && (filters.priceRange[0] > 0 || filters.priceRange[1] < 25000)) {
           query = query
             .gte('price_per_night', filters.priceRange[0])
             .lte('price_per_night', filters.priceRange[1]);
         }
-        if (filters.minRating > 0) {
+        
+        if (filters.minRating && filters.minRating > 0) {
           query = query.gte('rating', filters.minRating);
         }
+        
         if (filters.amenities && filters.amenities.length > 0) {
           query = query.contains('amenities', filters.amenities);
         }
       }
 
-      if (selectedCategory) {
-        query = query.eq('property_type', selectedCategory);
+      if (selectedCategory && selectedCategory !== 'All') {
+        query = query.eq('property_type', selectedCategory.toLowerCase());
       }
 
       const { data, error } = await query;
@@ -111,6 +116,7 @@ const Index = () => {
       console.log("Fetched properties:", data);
       return data as Property[];
     },
+    refetchOnWindowFocus: false,
   });
 
   const handleLogout = async () => {
@@ -137,6 +143,7 @@ const Index = () => {
   };
 
   const handleCategorySelect = (category: string) => {
+    console.log("Category selected:", category);
     setSelectedCategory(category);
     setFilters(null);
   };
@@ -144,6 +151,11 @@ const Index = () => {
   const handleDeleteProperty = () => {
     refetch();
   };
+
+  // Debug - log current state
+  console.log("Current filters:", filters);
+  console.log("Current category:", selectedCategory);
+  console.log("Properties length:", properties?.length);
 
   return (
     <div className="min-h-screen w-full flex flex-col">

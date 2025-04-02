@@ -79,6 +79,12 @@ export const PropertiesGrid = ({
     }
   };
 
+  // Add logging to debug properties data
+  console.log("Properties received:", properties);
+  console.log("Loading state:", isLoading);
+  console.log("Filter applied:", filters);
+  console.log("Selected category:", selectedCategory);
+
   const renderAdminView = (property: Property) => (
     <div key={property.id} className="bg-white rounded-lg shadow p-6">
       <div className="flex gap-4">
