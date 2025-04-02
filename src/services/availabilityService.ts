@@ -10,11 +10,13 @@ export const availabilityService = {
    */
   addAvailabilityPeriod: async (propertyId: string, startDate: string, endDate: string) => {
     const { data, error } = await supabase
-      .rpc('add_property_availability', { 
-        p_property_id: propertyId,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
+      .from('property_availability')
+      .insert({ 
+        property_id: propertyId,
+        start_date: startDate,
+        end_date: endDate 
+      })
+      .select();
       
     if (error) throw error;
     return data;
@@ -30,9 +32,8 @@ export const availabilityService = {
       .from('bookings')
       .select('*')
       .eq('property_id', propertyId)
-      .gte('check_out', startDate)
-      .lte('check_in', endDate)
-      .neq('status', 'canceled');
+      .neq('status', 'canceled')
+      .or(`check_in.lte.${endDate},check_out.gte.${startDate}`);
       
     if (error) throw error;
     return data.length === 0; // Property is available if no overlapping bookings found

@@ -10,6 +10,7 @@ import { PropertyHeader } from "@/components/property/PropertyHeader";
 import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
+import { HostContactInfo } from "@/components/property/HostContactInfo";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -226,6 +227,12 @@ const PropertyDetails = () => {
               onDatesChange={setDates}
               onGuestsChange={setGuests}
               onBookingSubmit={handleBooking}
+            />
+            
+            <HostContactInfo 
+              hostId={property.owner_id || ''} 
+              propertyTitle={property.title}
+              isAuthenticated={!!session}
             />
           </div>
         </div>
