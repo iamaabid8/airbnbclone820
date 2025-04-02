@@ -11,11 +11,13 @@ import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
 import { HostContactInfo } from "@/components/property/HostContactInfo";
+import { PropertyReviews } from "@/components/property/PropertyReviews";
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const [guests, setGuests] = useState(1);
   const [dates, setDates] = useState({ checkIn: "", checkOut: "" });
+  const [reviewsRefresh, setReviewsRefresh] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -154,6 +156,10 @@ const PropertyDetails = () => {
     });
   };
 
+  const handleReviewSubmitted = () => {
+    setReviewsRefresh(prev => prev + 1);
+  };
+
   if (isLoading) {
     console.log("Loading state..."); // Debug log
     return (
@@ -213,6 +219,11 @@ const PropertyDetails = () => {
               description={property.description}
               amenities={property.amenities}
             />
+            
+            <PropertyReviews 
+              propertyId={property.id} 
+              refreshTrigger={reviewsRefresh}
+            />
           </div>
 
           <div className="md:col-span-1">
@@ -227,6 +238,7 @@ const PropertyDetails = () => {
               onDatesChange={setDates}
               onGuestsChange={setGuests}
               onBookingSubmit={handleBooking}
+              onReviewSubmitted={handleReviewSubmitted}
             />
             
             <HostContactInfo 

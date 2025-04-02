@@ -1,4 +1,3 @@
-
 import { User, Settings, BookOpen, Home, Heart, LogOut, Plus, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -26,6 +25,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Navigation } from "@/components/Navigation";
+import { format } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookingReviewCard } from "@/components/bookings/BookingReviewCard";
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
