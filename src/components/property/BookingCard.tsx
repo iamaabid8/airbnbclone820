@@ -1,12 +1,16 @@
 
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { differenceInDays } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 interface BookingCardProps {
   pricePerNight: number;
   maxGuests: number;
+  propertyId: string;
   dates: {
     checkIn: string;
     checkOut: string;
@@ -22,6 +26,7 @@ interface BookingCardProps {
 export const BookingCard = ({
   pricePerNight,
   maxGuests,
+  propertyId,
   dates,
   guests,
   isLoading,
@@ -31,6 +36,72 @@ export const BookingCard = ({
   onBookingSubmit,
 }: BookingCardProps) => {
   const priceInRupees = Math.round(pricePerNight * 83);
+  const [isAvailable, setIsAvailable] = useState(true);
+  
+  // Check availability when dates change
+  const { data: availabilityData, isLoading: checkingAvailability } = useQuery({
+    queryKey: ['availability', propertyId, dates.checkIn, dates.checkOut],
+    queryFn: async () => {
+      // Only check if both dates are selected
+      if (!dates.checkIn || !dates.checkOut) return { available: true };
+      
+      const { data, error } = await supabase
+        .from('property_availability')
+        .select('*')
+        .eq('property_id', propertyId)
+        .or(`start_date.lte.${dates.checkOut},end_date.gte.${dates.checkIn}`);
+      
+      if (error) {
+        console.error("Error checking availability:", error);
+        throw error;
+      }
+      
+      // Property is available if no overlapping bookings found
+      return { 
+        available: data?.length === 0,
+        conflictingDates: data 
+      };
+    },
+    enabled: !!(propertyId && dates.checkIn && dates.checkOut),
+  });
+  
+  // Listen for real-time availability updates
+  useEffect(() => {
+    if (!propertyId) return;
+    
+    const channel = supabase
+      .channel('property_availability_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'property_availability',
+          filter: `property_id=eq.${propertyId}`
+        },
+        (payload) => {
+          console.log('Availability changed:', payload);
+          // Refetch availability data when changes occur
+          if (dates.checkIn && dates.checkOut) {
+            // We'll trigger a refetch of the availability data
+            // by forcing a re-render of the component
+            setIsAvailable(prev => !prev); // Toggle to force refetch
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [propertyId]);
+  
+  // Update availability status when data changes
+  useEffect(() => {
+    if (availabilityData) {
+      setIsAvailable(availabilityData.available);
+    }
+  }, [availabilityData]);
 
   return (
     <div className="sticky top-24 bg-white rounded-xl shadow-lg p-6">
@@ -72,6 +143,24 @@ export const BookingCard = ({
             placeholder="Guests"
           />
         </div>
+        
+        {/* Availability status */}
+        {dates.checkIn && dates.checkOut && (
+          <div className={`p-3 rounded-lg flex items-center gap-2 ${isAvailable ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {isAvailable ? (
+              <>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span>Available for these dates</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-5 h-5" />
+                <span>Not available for these dates</span>
+              </>
+            )}
+            {checkingAvailability && <span className="ml-2 text-xs">(Checking...)</span>}
+          </div>
+        )}
       </div>
 
       {dates.checkIn && dates.checkOut && (
@@ -90,9 +179,9 @@ export const BookingCard = ({
       <Button 
         className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white"
         onClick={onBookingSubmit}
-        disabled={isLoading}
+        disabled={isLoading || !isAvailable || checkingAvailability}
       >
-        {isLoading ? "Confirming..." : "Reserve Now"}
+        {isLoading ? "Confirming..." : !isAvailable ? "Not Available" : "Reserve Now"}
       </Button>
     </div>
   );

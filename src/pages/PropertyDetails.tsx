@@ -1,8 +1,7 @@
-
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addDays } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
@@ -68,7 +67,7 @@ const PropertyDetails = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'availability'] });
       toast({
         title: "Booking confirmed!",
         description: "Your reservation has been successfully made.",
@@ -202,6 +201,7 @@ const PropertyDetails = () => {
             <BookingCard
               pricePerNight={property.price_per_night}
               maxGuests={property.max_guests}
+              propertyId={property.id}
               dates={dates}
               guests={guests}
               isLoading={bookingMutation.isPending}
