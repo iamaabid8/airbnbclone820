@@ -14,6 +14,7 @@ export type Database = {
           check_in: string
           check_out: string
           created_at: string
+          guests: number | null
           id: string
           property_id: string | null
           status: string | null
@@ -24,6 +25,7 @@ export type Database = {
           check_in: string
           check_out: string
           created_at?: string
+          guests?: number | null
           id?: string
           property_id?: string | null
           status?: string | null
@@ -34,6 +36,7 @@ export type Database = {
           check_in?: string
           check_out?: string
           created_at?: string
+          guests?: number | null
           id?: string
           property_id?: string | null
           status?: string | null

@@ -62,33 +62,6 @@ export const BookingCard = ({
   });
   
   useEffect(() => {
-    if (!propertyId) return;
-    
-    const channel = supabase
-      .channel('property_availability_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'bookings',
-          filter: `property_id=eq.${propertyId}`
-        },
-        (payload) => {
-          console.log('Availability changed:', payload);
-          if (dates.checkIn && dates.checkOut) {
-            setIsAvailable(prev => !prev);
-          }
-        }
-      )
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [propertyId]);
-  
-  useEffect(() => {
     if (availabilityData) {
       setIsAvailable(availabilityData.available);
     }
@@ -184,3 +157,4 @@ export const BookingCard = ({
     </div>
   );
 };
+
