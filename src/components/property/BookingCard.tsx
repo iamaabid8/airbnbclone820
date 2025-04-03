@@ -1,3 +1,4 @@
+
 import { Calendar, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,6 @@ export const BookingCard = ({
   onBookingSubmit,
   onReviewSubmitted,
 }: BookingCardProps) => {
-  const priceInRupees = Math.round(pricePerNight * 83);
   const [isAvailable, setIsAvailable] = useState(true);
   
   const { data: availabilityData, isLoading: checkingAvailability } = useQuery({
@@ -93,37 +93,45 @@ export const BookingCard = ({
       setIsAvailable(availabilityData.available);
     }
   }, [availabilityData]);
+  
+  // Calculate total price
+  const numberOfNights = dates.checkIn && dates.checkOut 
+    ? differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))
+    : 0;
+  const totalPrice = numberOfNights * pricePerNight;
 
   return (
     <div className="sticky top-24 bg-white rounded-xl shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-2xl font-bold text-airbnb-dark">₹{priceInRupees.toLocaleString('en-IN')}</span>
-        <span className="text-airbnb-light">per night</span>
+        <span className="text-2xl font-bold text-gray-800">₹{pricePerNight.toLocaleString('en-IN')}</span>
+        <span className="text-gray-500">per night</span>
       </div>
 
       <div className="space-y-4 mb-6">
         <div className="flex items-center border rounded-lg p-3">
-          <Calendar className="w-5 h-5 text-airbnb-primary mr-2" />
+          <Calendar className="w-5 h-5 text-red-500 mr-2" />
           <Input
             type="date"
             min={minDate}
             value={dates.checkIn}
             onChange={(e) => onDatesChange({ ...dates, checkIn: e.target.value })}
             className="border-none focus:outline-none"
+            placeholder="mm/dd/yyyy"
           />
         </div>
         <div className="flex items-center border rounded-lg p-3">
-          <Calendar className="w-5 h-5 text-airbnb-primary mr-2" />
+          <Calendar className="w-5 h-5 text-red-500 mr-2" />
           <Input
             type="date"
             min={dates.checkIn || minDate}
             value={dates.checkOut}
             onChange={(e) => onDatesChange({ ...dates, checkOut: e.target.value })}
             className="border-none focus:outline-none"
+            placeholder="mm/dd/yyyy"
           />
         </div>
         <div className="flex items-center border rounded-lg p-3">
-          <User className="w-5 h-5 text-airbnb-primary mr-2" />
+          <User className="w-5 h-5 text-red-500 mr-2" />
           <Input
             type="number"
             min="1"
@@ -153,23 +161,23 @@ export const BookingCard = ({
         )}
       </div>
 
-      {dates.checkIn && dates.checkOut && (
+      {dates.checkIn && dates.checkOut && numberOfNights > 0 && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between mb-2">
-            <span>₹{priceInRupees} × {differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))} nights</span>
-            <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+            <span>₹{pricePerNight.toLocaleString('en-IN')} × {numberOfNights} {numberOfNights === 1 ? 'night' : 'nights'}</span>
+            <span>₹{totalPrice.toLocaleString('en-IN')}</span>
           </div>
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span>₹{(priceInRupees * differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))).toLocaleString('en-IN')}</span>
+            <span>₹{totalPrice.toLocaleString('en-IN')}</span>
           </div>
         </div>
       )}
 
       <Button 
-        className="w-full bg-airbnb-primary hover:bg-airbnb-primary/90 text-white"
+        className="w-full bg-red-500 hover:bg-red-600 text-white py-4 h-auto text-lg font-medium"
         onClick={onBookingSubmit}
-        disabled={isLoading || !isAvailable || checkingAvailability}
+        disabled={isLoading || !isAvailable || checkingAvailability || !dates.checkIn || !dates.checkOut}
       >
         {isLoading ? "Confirming..." : !isAvailable ? "Not Available" : "Reserve Now"}
       </Button>

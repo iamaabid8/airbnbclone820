@@ -46,7 +46,7 @@ export const PropertyCard = ({ property }: { property: Property }) => {
               {property.title}
             </h3>
             <p className="text-airbnb-light flex items-center">
-              <span className="inline-block mr-2">📍</span>
+              <span className="inline-block mr-2 text-pink-500">📍</span>
               {property.location}
             </p>
             {property.amenities && property.amenities.length > 0 && (
