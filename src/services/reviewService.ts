@@ -9,15 +9,16 @@ export const reviewService = {
    * Create a new review for a booking
    */
   createReview: async (bookingId: string, propertyId: string, userId: string, rating: number, comment: string) => {
+    // Use 'from' with table name as a string literal - this allows TypeScript to work with tables not yet in the schema cache
     const { data, error } = await supabase
       .from('reviews')
-      .insert({ 
+      .insert([{ 
         booking_id: bookingId,
         property_id: propertyId,
         user_id: userId,
         rating,
         comment 
-      })
+      }])
       .select();
       
     if (error) throw error;

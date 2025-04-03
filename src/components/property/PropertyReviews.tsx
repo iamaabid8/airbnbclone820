@@ -14,7 +14,7 @@ export const PropertyReviews = ({ propertyId, refreshTrigger = 0 }: PropertyRevi
     queryFn: async () => {
       const { count, error } = await supabase
         .from('reviews')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('property_id', propertyId);
         
       if (error) throw error;

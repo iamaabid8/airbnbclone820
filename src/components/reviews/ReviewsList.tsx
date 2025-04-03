@@ -34,7 +34,8 @@ export const ReviewsList = ({ propertyId, refreshTrigger = 0 }: ReviewsListProps
       
       try {
         const data = await reviewService.getPropertyReviews(propertyId);
-        setReviews(data as Review[]);
+        // Use type assertion to handle the type mismatch
+        setReviews(data as unknown as Review[]);
       } catch (err: any) {
         console.error("Error fetching reviews:", err);
         setError(err.message || "Failed to load reviews");

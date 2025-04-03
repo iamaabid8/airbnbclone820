@@ -1,4 +1,3 @@
-
 import { Calendar, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +10,14 @@ interface BookingCardProps {
   pricePerNight: number;
   maxGuests: number;
   propertyId: string;
-  dates: {
-    checkIn: string;
-    checkOut: string;
-  };
+  dates: { checkIn: string; checkOut: string };
   guests: number;
   isLoading: boolean;
   minDate: string;
   onDatesChange: (dates: { checkIn: string; checkOut: string }) => void;
   onGuestsChange: (guests: number) => void;
   onBookingSubmit: () => void;
+  onReviewSubmitted?: () => void;
 }
 
 export const BookingCard = ({
@@ -34,15 +31,14 @@ export const BookingCard = ({
   onDatesChange,
   onGuestsChange,
   onBookingSubmit,
+  onReviewSubmitted,
 }: BookingCardProps) => {
   const priceInRupees = Math.round(pricePerNight * 83);
   const [isAvailable, setIsAvailable] = useState(true);
   
-  // Check availability when dates change
   const { data: availabilityData, isLoading: checkingAvailability } = useQuery({
     queryKey: ['availability', propertyId, dates.checkIn, dates.checkOut],
     queryFn: async () => {
-      // Only check if both dates are selected
       if (!dates.checkIn || !dates.checkOut) return { available: true };
       
       const { data, error } = await supabase
@@ -57,7 +53,6 @@ export const BookingCard = ({
         throw error;
       }
       
-      // Property is available if no overlapping bookings found
       return { 
         available: data?.length === 0,
         conflictingDates: data 
@@ -66,7 +61,6 @@ export const BookingCard = ({
     enabled: !!(propertyId && dates.checkIn && dates.checkOut),
   });
   
-  // Listen for real-time availability updates
   useEffect(() => {
     if (!propertyId) return;
     
@@ -82,11 +76,8 @@ export const BookingCard = ({
         },
         (payload) => {
           console.log('Availability changed:', payload);
-          // Refetch availability data when changes occur
           if (dates.checkIn && dates.checkOut) {
-            // We'll trigger a refetch of the availability data
-            // by forcing a re-render of the component
-            setIsAvailable(prev => !prev); // Toggle to force refetch
+            setIsAvailable(prev => !prev);
           }
         }
       )
@@ -97,7 +88,6 @@ export const BookingCard = ({
     };
   }, [propertyId]);
   
-  // Update availability status when data changes
   useEffect(() => {
     if (availabilityData) {
       setIsAvailable(availabilityData.available);
@@ -145,7 +135,6 @@ export const BookingCard = ({
           />
         </div>
         
-        {/* Availability status */}
         {dates.checkIn && dates.checkOut && (
           <div className={`p-3 rounded-lg flex items-center gap-2 ${isAvailable ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
             {isAvailable ? (
