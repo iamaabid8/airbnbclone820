@@ -43,6 +43,7 @@ export const reviewService = {
    * Get reviews for a property
    */
   getPropertyReviews: async (propertyId: string) => {
+    // Modified the query to handle the relationship correctly
     const { data, error } = await supabase
       .from('reviews')
       .select(`
@@ -51,7 +52,7 @@ export const reviewService = {
         comment, 
         created_at, 
         user_id,
-        profiles:user_id (name, avatar_url)
+        profiles (name, avatar_url)
       `)
       .eq('property_id', propertyId)
       .order('created_at', { ascending: false });

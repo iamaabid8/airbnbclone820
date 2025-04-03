@@ -4,6 +4,7 @@ import { Star, User } from "lucide-react";
 import { format } from "date-fns";
 import { reviewService } from "@/services/reviewService";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Review {
   id: string;
@@ -97,17 +98,18 @@ export const ReviewsList = ({ propertyId, refreshTrigger = 0 }: ReviewsListProps
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                <Avatar>
                   {review.profiles?.avatar_url ? (
-                    <img 
+                    <AvatarImage 
                       src={review.profiles.avatar_url} 
                       alt={review.profiles.name || "User"} 
-                      className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (
-                    <User className="h-6 w-6 text-gray-500" />
+                    <AvatarFallback>
+                      <User className="h-5 w-5" />
+                    </AvatarFallback>
                   )}
-                </div>
+                </Avatar>
                 <div>
                   <p className="font-medium">{review.profiles?.name || "Anonymous User"}</p>
                   <p className="text-sm text-gray-500">
@@ -138,4 +140,4 @@ export const ReviewsList = ({ propertyId, refreshTrigger = 0 }: ReviewsListProps
       ))}
     </div>
   );
-};
+}

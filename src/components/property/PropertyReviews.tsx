@@ -12,6 +12,7 @@ export const PropertyReviews = ({ propertyId, refreshTrigger = 0 }: PropertyRevi
   const { data: totalReviews, isLoading } = useQuery({
     queryKey: ['totalReviews', propertyId, refreshTrigger],
     queryFn: async () => {
+      // Fixed the issue with count query by specifying count 'exact' and using `head: true`
       const { count, error } = await supabase
         .from('reviews')
         .select('*', { count: 'exact', head: true })
