@@ -1,3 +1,4 @@
+
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,7 @@ const PropertyDetails = () => {
       check_out: string;
       total_price: number;
       user_id: string;
+      guests: number;
     }) => {
       // Check for existing bookings that overlap with these dates
       const { data: existingBookings, error: checkError } = await supabase
@@ -152,6 +154,7 @@ const PropertyDetails = () => {
       check_out: dates.checkOut,
       total_price: totalPrice,
       user_id: session.user.id,
+      guests: guests,
     });
   };
 

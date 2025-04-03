@@ -1,7 +1,6 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ImageOff } from "lucide-react";
 
 type Property = {
   id: string;

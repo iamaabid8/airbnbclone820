@@ -18,6 +18,7 @@ export const bookingService = {
         total_price,
         status,
         property_id,
+        guests,
         properties:property_id (
           title,
           location,
@@ -43,6 +44,7 @@ export const bookingService = {
         total_price,
         status,
         property_id,
+        guests,
         user_id
       `)
       .eq('id', bookingId)
