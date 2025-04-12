@@ -9,8 +9,6 @@ type Property = {
   location: string;
   images: string[] | null;
   price_per_night: number;
-  rating: number;
-  total_ratings: number;
   amenities: string[];
   property_type: string;
 };
@@ -53,15 +51,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
                 {property.amenities.slice(0, 3).join(" · ")}
                 {property.amenities.length > 3 && " · ..."}
               </p>
-            )}
-          </div>
-          <div className="flex items-center">
-            <span className="text-yellow-400 mr-1">★</span>
-            <span className="text-airbnb-dark">{property.rating || "New"}</span>
-            {property.total_ratings > 0 && (
-              <span className="text-sm text-muted-foreground ml-1">
-                ({property.total_ratings})
-              </span>
             )}
           </div>
         </div>

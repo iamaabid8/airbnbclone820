@@ -18,7 +18,6 @@ interface BookingCardProps {
   onDatesChange: (dates: { checkIn: string; checkOut: string }) => void;
   onGuestsChange: (guests: number) => void;
   onBookingSubmit: () => void;
-  onReviewSubmitted?: () => void;
 }
 
 export const BookingCard = ({
@@ -32,7 +31,6 @@ export const BookingCard = ({
   onDatesChange,
   onGuestsChange,
   onBookingSubmit,
-  onReviewSubmitted,
 }: BookingCardProps) => {
   const [isAvailable, setIsAvailable] = useState(true);
   
@@ -157,4 +155,3 @@ export const BookingCard = ({
     </div>
   );
 };
-

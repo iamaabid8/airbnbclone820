@@ -1,38 +1,27 @@
 
-import { Star, MapPin, Share2, Heart } from "lucide-react";
+import { Share, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PropertyHeaderProps {
   title: string;
-  rating: number;
-  totalRatings: number;
   location: string;
 }
 
-export const PropertyHeader = ({ title, rating, totalRatings, location }: PropertyHeaderProps) => {
+export const PropertyHeader = ({
+  title,
+  location,
+}: PropertyHeaderProps) => {
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold text-airbnb-dark mb-4">{title}</h1>
+    <div className="mb-6">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center">
-            <Star className="w-5 h-5 text-yellow-400 mr-1" />
-            <span className="font-semibold">{rating}</span>
-            <span className="text-airbnb-light ml-1">({totalRatings} reviews)</span>
-          </div>
-          <div className="flex items-center">
-            <MapPin className="w-5 h-5 text-airbnb-primary mr-1" />
-            <span>{location}</span>
-          </div>
-        </div>
-        <div className="flex space-x-4">
-          <Button variant="outline" className="flex items-center">
-            <Share2 className="w-5 h-5 mr-2" />
-            Share
+        <p className="text-lg text-gray-600">{location}</p>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Share className="h-4 w-4" /> Share
           </Button>
-          <Button variant="outline" className="flex items-center">
-            <Heart className="w-5 h-5 mr-2" />
-            Save
+          <Button variant="outline" size="sm" className="gap-2">
+            <Heart className="h-4 w-4" /> Save
           </Button>
         </div>
       </div>

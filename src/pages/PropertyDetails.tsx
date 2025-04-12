@@ -2,7 +2,7 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addDays } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
@@ -11,13 +11,11 @@ import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
 import { HostContactInfo } from "@/components/property/HostContactInfo";
-import { PropertyReviews } from "@/components/property/PropertyReviews";
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const [guests, setGuests] = useState(1);
   const [dates, setDates] = useState({ checkIn: "", checkOut: "" });
-  const [reviewsRefresh, setReviewsRefresh] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -158,10 +156,6 @@ const PropertyDetails = () => {
     });
   };
 
-  const handleReviewSubmitted = () => {
-    setReviewsRefresh(prev => prev + 1);
-  };
-
   if (isLoading) {
     console.log("Loading state..."); // Debug log
     return (
@@ -208,8 +202,6 @@ const PropertyDetails = () => {
       <div className="container mx-auto pt-24 px-6">
         <PropertyHeader
           title={property.title}
-          rating={property.rating}
-          totalRatings={property.total_ratings}
           location={property.location}
         />
 
@@ -220,11 +212,6 @@ const PropertyDetails = () => {
             <PropertyInfo
               description={property.description}
               amenities={property.amenities}
-            />
-            
-            <PropertyReviews 
-              propertyId={property.id} 
-              refreshTrigger={reviewsRefresh}
             />
           </div>
 
@@ -240,7 +227,6 @@ const PropertyDetails = () => {
               onDatesChange={setDates}
               onGuestsChange={setGuests}
               onBookingSubmit={handleBooking}
-              onReviewSubmitted={handleReviewSubmitted}
             />
             
             <HostContactInfo 
