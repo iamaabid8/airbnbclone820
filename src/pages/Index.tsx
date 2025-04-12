@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -82,9 +81,8 @@ const Index = () => {
           query = query.ilike('location', `%${filters.location}%`);
         }
         
-        // Optional filters - only apply if they exist and are meaningful
         if (filters.propertyType && filters.propertyType !== 'All types') {
-          query = query.eq('property_type', filters.propertyType);
+          query = query.eq('property_type', filters.propertyType.toLowerCase());
         }
         
         if (filters.priceRange && (filters.priceRange[0] > 0 || filters.priceRange[1] < 25000)) {
@@ -103,7 +101,7 @@ const Index = () => {
       }
 
       if (selectedCategory && selectedCategory !== 'All') {
-        query = query.eq('property_type', selectedCategory.toLowerCase());
+        query = query.eq('property_type', selectedCategory);
       }
 
       const { data, error } = await query;
@@ -152,7 +150,6 @@ const Index = () => {
     refetch();
   };
 
-  // Debug - log current state
   console.log("Current filters:", filters);
   console.log("Current category:", selectedCategory);
   console.log("Properties length:", properties?.length);

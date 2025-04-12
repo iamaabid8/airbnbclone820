@@ -9,6 +9,14 @@ const fallbackImages = {
   default: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
 };
 
+// Map display names to database values
+const categoryMap = {
+  "Beach Houses": "beach houses",
+  "Mountain Cabins": "mountain cabins",
+  "Luxury Villas": "luxury villas",
+  "City Apartments": "city apartments"
+};
+
 const categoryImages = {
   "Beach Houses": "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
   "Mountain Cabins": "https://images.unsplash.com/photo-1472396961693-142e6e269027",
@@ -26,6 +34,11 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
     e.currentTarget.src = fallbackImages.default;
   };
 
+  const handleCategoryClick = (displayName: string) => {
+    // Pass the database value mapping when a category is selected
+    onCategorySelect(categoryMap[displayName] || displayName);
+  };
+
   return (
     <section className="py-20 px-6">
       <div className="container mx-auto">
@@ -33,27 +46,32 @@ export const Categories = ({ selectedCategory, onCategorySelect }: CategoriesPro
           Browse by property type
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {Object.entries(categoryImages).map(([category, image]) => (
-            <div
-              key={category}
-              className="group cursor-pointer"
-              onClick={() => onCategorySelect(category)}
-            >
-              <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden relative">
-                <img
-                  src={image}
-                  alt={category}
-                  onError={handleImageError}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
+          {Object.entries(categoryImages).map(([displayName, image]) => {
+            // Check if the selected category matches this category's database value
+            const isSelected = selectedCategory === categoryMap[displayName];
+            
+            return (
+              <div
+                key={displayName}
+                className="group cursor-pointer"
+                onClick={() => handleCategoryClick(displayName)}
+              >
+                <div className="aspect-square rounded-xl bg-gray-200 mb-4 overflow-hidden relative">
+                  <img
+                    src={image}
+                    alt={displayName}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+                <h3 className={`text-lg font-semibold text-center ${
+                  isSelected ? 'text-airbnb-primary' : 'text-airbnb-dark'
+                }`}>
+                  {displayName}
+                </h3>
               </div>
-              <h3 className={`text-lg font-semibold text-center ${
-                selectedCategory === category ? 'text-airbnb-primary' : 'text-airbnb-dark'
-              }`}>
-                {category}
-              </h3>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
