@@ -101,6 +101,7 @@ const Index = () => {
       }
 
       if (selectedCategory && selectedCategory !== 'All') {
+        console.log(`Filtering by property_type=${selectedCategory}`);
         query = query.eq('property_type', selectedCategory);
       }
 

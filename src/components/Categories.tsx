@@ -9,12 +9,12 @@ const fallbackImages = {
   default: "https://images.unsplash.com/photo-1487958449943-2429e8be8625"
 };
 
-// Map display names to database values
+// Map display names to database values based on what's actually in the database
 const categoryMap = {
-  "Beach Houses": "beach houses",
-  "Mountain Cabins": "mountain cabins",
-  "Luxury Villas": "luxury villas",
-  "City Apartments": "city apartments"
+  "Beach Houses": "villa", // Changed from "beach houses" to match actual data
+  "Mountain Cabins": "cabin", // Changed from "mountain cabins" to match actual data
+  "Luxury Villas": "villa", // Changed from "luxury villas" to match actual data
+  "City Apartments": "apartment" // Changed from "city apartments" to match actual data
 };
 
 const categoryImages = {
