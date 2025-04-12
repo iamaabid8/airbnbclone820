@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ReviewDialog } from "../reviews/ReviewDialog";
-import { reviewService } from "@/services/reviewService";
 import { bookingService } from "@/services/bookingService";
 
 interface BookingReviewCardProps {
@@ -21,12 +19,10 @@ interface BookingReviewCardProps {
       images?: string[] | null;
     };
   };
-  onReviewSubmitted?: () => void;
 }
 
-export const BookingReviewCard = ({ booking, onReviewSubmitted }: BookingReviewCardProps) => {
+export const BookingReviewCard = ({ booking }: BookingReviewCardProps) => {
   const [isCompleted, setIsCompleted] = useState(false);
-  const [hasReviewed, setHasReviewed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,12 +32,6 @@ export const BookingReviewCard = ({ booking, onReviewSubmitted }: BookingReviewC
         // Check if the booking is completed
         const completed = await bookingService.isBookingCompleted(booking.id);
         setIsCompleted(completed);
-        
-        // Check if the user has already reviewed this booking
-        if (completed) {
-          const reviewed = await reviewService.hasReviewed(booking.id);
-          setHasReviewed(reviewed);
-        }
       } catch (error) {
         console.error("Error checking booking status:", error);
       } finally {
@@ -53,15 +43,8 @@ export const BookingReviewCard = ({ booking, onReviewSubmitted }: BookingReviewC
   }, [booking.id]);
   
   if (!isCompleted || booking.status === 'canceled') {
-    return null; // Don't show review option for non-completed or canceled bookings
+    return null; // Don't show for non-completed or canceled bookings
   }
-  
-  const handleReviewSubmitted = () => {
-    setHasReviewed(true);
-    if (onReviewSubmitted) {
-      onReviewSubmitted();
-    }
-  };
 
   return (
     <Card className="mb-4 border-green-200 bg-green-50">
@@ -91,23 +74,9 @@ export const BookingReviewCard = ({ booking, onReviewSubmitted }: BookingReviewC
         </div>
         <div>
           {!isLoading && (
-            hasReviewed ? (
-              <Button variant="outline" disabled>
-                Already Reviewed
-              </Button>
-            ) : (
-              <ReviewDialog
-                bookingId={booking.id}
-                propertyId={booking.property_id}
-                userId={booking.user_id}
-                propertyName={booking.properties.title}
-                onReviewSubmitted={handleReviewSubmitted}
-              >
-                <Button variant="outline">
-                  Leave a Review
-                </Button>
-              </ReviewDialog>
-            )
+            <Button variant="outline" className="border-green-500 text-green-700">
+              Completed
+            </Button>
           )}
         </div>
       </CardFooter>
