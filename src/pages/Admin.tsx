@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Users, Home, BookOpen, BarChart, Settings, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -306,7 +307,7 @@ const Admin = () => {
                   { title: "Total Properties", value: stats.totalProperties, icon: Home },
                   { title: "Active Users", value: stats.activeUsers, icon: Users },
                   { title: "Total Bookings", value: stats.totalBookings, icon: BookOpen },
-                  { title: "Revenue", value: `$${stats.revenue.toLocaleString()}`, icon: BarChart },
+                  { title: "Revenue", value: `₹${stats.revenue.toLocaleString('en-IN')}`, icon: BarChart },
                 ].map((stat) => (
                   <div key={stat.title} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
@@ -514,6 +515,9 @@ const Admin = () => {
                           <p className="text-airbnb-light">
                             Check-in: {new Date(booking.check_in).toLocaleDateString()}
                           </p>
+                          <p className="text-airbnb-primary">
+                            ₹{booking.total_price.toLocaleString('en-IN')} total
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
@@ -546,7 +550,7 @@ const Admin = () => {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price per night</Label>
+              <Label htmlFor="price">Price per night (₹)</Label>
               <Input
                 id="price"
                 type="number"
