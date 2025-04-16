@@ -1,4 +1,3 @@
-
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
@@ -43,7 +42,6 @@ export const PropertiesGrid = ({
 }: PropertiesGridProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Fetch the current user's ID when the component mounts
   useEffect(() => {
     const fetchUserId = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -79,7 +77,6 @@ export const PropertiesGrid = ({
     }
   };
 
-  // Add logging to debug properties data
   console.log("Properties received:", properties);
   console.log("Loading state:", isLoading);
   console.log("Filter applied:", filters);
@@ -117,7 +114,7 @@ export const PropertiesGrid = ({
             <div>
               <span className="font-medium">Price:</span>
               <br />
-              ₹{property.price_per_night}/night
+              ₹{property.price_per_night.toLocaleString('en-IN')}/night
             </div>
             <div>
               <span className="font-medium">Type:</span>
@@ -169,7 +166,6 @@ export const PropertiesGrid = ({
               isAdmin ? renderAdminView(property) : (
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
-                  {/* Delete button removed - only admin can delete listings */}
                 </div>
               )
             ))}
