@@ -255,7 +255,7 @@ const Index = () => {
             </div>
             
             <div className="text-center mt-4 text-sm text-gray-600">
-              © {new Date().getFullYear()} Airbnb Clone. All rights reserved.
+              © {new Date().getFullYear()} Homi. All rights reserved.
             </div>
           </div>
         </div>

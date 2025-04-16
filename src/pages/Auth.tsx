@@ -104,7 +104,7 @@ const Auth = () => {
       <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
         <div className="container mx-auto">
           <Link to="/" className="text-airbnb-primary font-heading text-2xl font-bold">
-            airbnb
+            Homi
           </Link>
         </div>
       </nav>
@@ -209,3 +209,4 @@ const Auth = () => {
 };
 
 export default Auth;
+

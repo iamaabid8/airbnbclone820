@@ -16,7 +16,7 @@ export const Navigation = ({
     <nav className="fixed top-0 w-full glass-effect z-50 px-6 py-4">
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="text-airbnb-primary font-heading text-2xl font-bold hover:opacity-90 transition-opacity">
-          airbnb
+          Homi
         </Link>
         <div className="hidden md:flex items-center space-x-6">
           <Link to="/host" className="nav-link">Become a Host</Link>
@@ -46,3 +46,4 @@ export const Navigation = ({
     </nav>
   );
 };
+
