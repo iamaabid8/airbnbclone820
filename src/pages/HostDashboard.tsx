@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Settings, Home, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -73,10 +72,7 @@ const HostDashboard = () => {
   };
 
   const fetchBookings = async (propertyIds: string[]) => {
-    if (propertyIds.length === 0) {
-      setBookings([]);
-      return;
-    }
+    if (propertyIds.length === 0) return;
 
     const { data, error } = await supabase
       .from('bookings')
@@ -88,10 +84,12 @@ const HostDashboard = () => {
       `)
       .in('property_id', propertyIds);
 
-    // Just set empty bookings array if there's an error, don't show any toast
     if (error) {
-      console.error("Error fetching bookings:", error);
-      setBookings([]);
+      toast({
+        title: "Error",
+        description: "Failed to fetch bookings",
+        variant: "destructive",
+      });
       return;
     }
 
