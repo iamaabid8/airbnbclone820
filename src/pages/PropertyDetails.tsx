@@ -1,4 +1,3 @@
-
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,11 @@ import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
 import { HostContactInfo } from "@/components/property/HostContactInfo";
+import { reviewService } from "@/services/reviewService";
+import { Star, StarHalf } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -39,6 +43,15 @@ const PropertyDetails = () => {
         throw error;
       }
       return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: reviews, isLoading: isLoadingReviews } = useQuery({
+    queryKey: ['propertyReviews', id],
+    queryFn: async () => {
+      if (!id) return [];
+      return reviewService.getPropertyReviews(id);
     },
     enabled: !!id,
   });
@@ -156,6 +169,21 @@ const PropertyDetails = () => {
     });
   };
 
+  const renderStarRating = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    return (
+      <div className="flex items-center">
+        {Array.from({ length: fullStars }).map((_, i) => (
+          <Star key={`star-${i}`} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+        ))}
+        {hasHalfStar && <StarHalf className="w-5 h-5 fill-yellow-400 text-yellow-400" />}
+        <span className="ml-2 text-sm font-medium">{rating.toFixed(1)}</span>
+      </div>
+    );
+  };
+
   if (isLoading) {
     console.log("Loading state..."); // Debug log
     return (
@@ -213,6 +241,74 @@ const PropertyDetails = () => {
               description={property.description}
               amenities={property.amenities}
             />
+            
+            <div className="mt-12">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-airbnb-dark">
+                  Reviews
+                </h2>
+                <div className="flex items-center gap-2">
+                  {renderStarRating(property.rating || 0)}
+                  <span className="text-gray-500">({property.total_ratings || 0} reviews)</span>
+                </div>
+              </div>
+              
+              <Separator className="mb-6" />
+              
+              {isLoadingReviews ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+                          <div className="h-3 bg-gray-200 rounded w-1/3" />
+                        </div>
+                      </div>
+                      <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+                      <div className="h-4 bg-gray-200 rounded w-5/6" />
+                    </div>
+                  ))}
+                </div>
+              ) : reviews && reviews.length > 0 ? (
+                <div className="space-y-8">
+                  {reviews.map((review: any) => (
+                    <Card key={review.id} className="border-none shadow-sm">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4 mb-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={review.profiles?.avatar_url} alt={review.profiles?.name || 'Guest'} />
+                            <AvatarFallback>
+                              {(review.profiles?.name || 'G')[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold">{review.profiles?.name || 'Guest'}</h4>
+                              <div className="flex items-center">
+                                {renderStarRating(review.rating)}
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </p>
+                            {review.comment && (
+                              <p className="mt-2 text-gray-600">{review.comment}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center py-8 text-gray-500">
+                  No reviews yet for this property.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="md:col-span-1">
