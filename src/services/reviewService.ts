@@ -28,6 +28,30 @@ export const reviewService = {
   },
   
   /**
+   * Subscribe to real-time updates for property reviews
+   * @param propertyId The ID of the property
+   * @param callback Function to call when reviews are updated
+   */
+  subscribeToPropertyReviews: (propertyId: string, callback: () => void) => {
+    const channel = supabase
+      .channel('public:reviews:property_id=eq.' + propertyId)
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'reviews',
+          filter: `property_id=eq.${propertyId}` 
+        }, 
+        () => {
+          callback();
+        }
+      )
+      .subscribe();
+
+    return channel;
+  },
+
+  /**
    * Check if a user has already reviewed a property
    * @param propertyId The ID of the property
    * @param userId The ID of the user

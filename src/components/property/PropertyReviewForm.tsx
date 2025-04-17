@@ -60,9 +60,10 @@ export function PropertyReviewForm({
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
+      console.error("Review submission error:", error);
       toast({
         title: "Failed to submit review",
-        description: error.message,
+        description: error.message || "Please try again later",
         variant: "destructive"
       });
     }

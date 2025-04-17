@@ -1,7 +1,7 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addDays } from "date-fns";
 import { PropertyNavigation } from "@/components/property/PropertyNavigation";
@@ -50,7 +50,7 @@ const PropertyDetails = () => {
     enabled: !!id,
   });
 
-  const { data: reviews, isLoading: isLoadingReviews } = useQuery({
+  const { data: reviews, isLoading: isLoadingReviews, refetch: refetchReviews } = useQuery({
     queryKey: ['propertyReviews', id],
     queryFn: async () => {
       if (!id) return [];
@@ -58,6 +58,19 @@ const PropertyDetails = () => {
     },
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (!id) return;
+    
+    const channel = reviewService.subscribeToPropertyReviews(id, () => {
+      console.log("Review update received, refetching reviews...");
+      refetchReviews();
+    });
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, refetchReviews]);
 
   const { data: session } = useQuery({
     queryKey: ['session'],
