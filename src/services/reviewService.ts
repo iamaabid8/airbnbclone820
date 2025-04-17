@@ -65,7 +65,7 @@ export const reviewService = {
    */
   submitReview: async (review: {
     property_id: string;
-    booking_id: string;
+    booking_id?: string;
     rating: number;
     comment?: string;
     user_id: string;

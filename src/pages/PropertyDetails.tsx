@@ -10,11 +10,13 @@ import { PropertyImages } from "@/components/property/PropertyImages";
 import { PropertyInfo } from "@/components/property/PropertyInfo";
 import { BookingCard } from "@/components/property/BookingCard";
 import { HostContactInfo } from "@/components/property/HostContactInfo";
+import { PropertyReviewForm } from "@/components/property/PropertyReviewForm";
 import { reviewService } from "@/services/reviewService";
 import { Star, StarHalf } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 const PropertyDetails = () => {
   const { id } = useParams();
@@ -23,23 +25,24 @@ const PropertyDetails = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
-  console.log("Current property ID:", id); // Debug log
+  console.log("Current property ID:", id);
 
   const { data: property, isLoading, error } = useQuery({
     queryKey: ['property', id],
     queryFn: async () => {
-      console.log("Fetching property with ID:", id); // Debug log
+      console.log("Fetching property with ID:", id);
       const { data, error } = await supabase
         .from('properties')
         .select('*')
         .eq('id', id)
         .single();
 
-      console.log("Supabase response:", { data, error }); // Debug log
+      console.log("Supabase response:", { data, error });
 
       if (error) {
-        console.error("Supabase error:", error); // Debug log
+        console.error("Supabase error:", error);
         throw error;
       }
       return data;
@@ -73,7 +76,6 @@ const PropertyDetails = () => {
       user_id: string;
       guests: number;
     }) => {
-      // Check for existing bookings that overlap with these dates
       const { data: existingBookings, error: checkError } = await supabase
         .from('bookings')
         .select('*')
@@ -83,12 +85,10 @@ const PropertyDetails = () => {
         
       if (checkError) throw checkError;
       
-      // If there are overlapping bookings, the property is not available
       if (existingBookings && existingBookings.length > 0) {
         throw new Error('Property is not available for the selected dates');
       }
       
-      // Create the booking
       const { data, error } = await supabase
         .from('bookings')
         .insert([bookingData])
@@ -185,7 +185,7 @@ const PropertyDetails = () => {
   };
 
   if (isLoading) {
-    console.log("Loading state..."); // Debug log
+    console.log("Loading state...");
     return (
       <div className="min-h-screen pt-24 px-6">
         <div className="container mx-auto animate-pulse">
@@ -204,7 +204,7 @@ const PropertyDetails = () => {
   }
 
   if (error || !property) {
-    console.log("No property found for ID:", id); // Debug log
+    console.log("No property found for ID:", id);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Property not found</h1>
@@ -254,6 +254,24 @@ const PropertyDetails = () => {
               </div>
               
               <Separator className="mb-6" />
+
+              {session && !showReviewForm && (
+                <div className="mb-8">
+                  <Button onClick={() => setShowReviewForm(true)} className="w-full">
+                    Write a Review
+                  </Button>
+                </div>
+              )}
+              
+              {session && showReviewForm && (
+                <div className="mb-8">
+                  <PropertyReviewForm 
+                    propertyId={property.id}
+                    userId={session.user.id}
+                    onSuccess={() => setShowReviewForm(false)}
+                  />
+                </div>
+              )}
               
               {isLoadingReviews ? (
                 <div className="space-y-4">
