@@ -28,6 +28,23 @@ export const reviewService = {
   },
   
   /**
+   * Check if a user has already reviewed a property
+   * @param propertyId The ID of the property
+   * @param userId The ID of the user
+   */
+  hasUserReviewedProperty: async (propertyId: string, userId: string) => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('property_id', propertyId)
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) throw error;
+    return !!data;
+  },
+  
+  /**
    * Check if a user has already reviewed a booking
    * @param bookingId The ID of the booking
    */
@@ -61,5 +78,40 @@ export const reviewService = {
       
     if (error) throw error;
     return data;
+  },
+  
+  /**
+   * Get completed bookings that can be reviewed
+   * @param userId The ID of the user
+   * @param propertyId The ID of the property
+   */
+  getReviewableBookings: async (userId: string, propertyId: string) => {
+    const now = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+    
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        check_in,
+        check_out
+      `)
+      .eq('user_id', userId)
+      .eq('property_id', propertyId)
+      .lt('check_out', now) // Only past bookings
+      .eq('status', 'confirmed')
+      .order('check_out', { ascending: false });
+      
+    if (error) throw error;
+    
+    // Check which bookings have not been reviewed yet
+    const reviewableBookings = [];
+    for (const booking of data || []) {
+      const hasReviewed = await reviewService.hasReviewedBooking(booking.id);
+      if (!hasReviewed) {
+        reviewableBookings.push(booking);
+      }
+    }
+    
+    return reviewableBookings;
   }
 };

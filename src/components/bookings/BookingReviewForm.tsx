@@ -50,6 +50,7 @@ export function BookingReviewForm({
         description: "Thank you for sharing your experience!"
       });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['hasReviewed', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['propertyReviews', propertyId] });
       if (onSuccess) onSuccess();
     },

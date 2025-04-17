@@ -6,6 +6,7 @@ import { BookingReviewForm } from "./BookingReviewForm";
 import { bookingService } from "@/services/bookingService";
 import { reviewService } from "@/services/reviewService";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BookingReviewCardProps {
   booking: {
@@ -42,8 +43,23 @@ export function BookingReviewCard({ booking, userId }: BookingReviewCardProps) {
     checkCompletion();
   }, [booking.id]);
 
-  if (!isCompleted || isCheckingReview) {
+  if (!isCompleted) {
     return null;
+  }
+
+  if (isCheckingReview) {
+    return (
+      <Card className="mb-4 bg-gray-50">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between">
+            <div className="w-full space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (hasReviewed) {
