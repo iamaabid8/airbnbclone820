@@ -70,9 +70,16 @@ export const reviewService = {
     comment?: string;
     user_id: string;
   }) => {
+    // If booking_id is not provided, use an empty string as the default
+    // to satisfy the database constraint
+    const reviewData = {
+      ...review,
+      booking_id: review.booking_id || '00000000-0000-0000-0000-000000000000' // Using a default UUID
+    };
+    
     const { data, error } = await supabase
       .from('reviews')
-      .insert([review])
+      .insert(reviewData)
       .select()
       .single();
       

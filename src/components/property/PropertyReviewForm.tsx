@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Star } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 
 interface PropertyReviewFormProps {
@@ -43,7 +43,6 @@ export function PropertyReviewForm({
     mutationFn: (data: { comment: string }) => {
       return reviewService.submitReview({
         property_id: propertyId,
-        booking_id: "", // Direct review without booking
         rating,
         comment: data.comment,
         user_id: userId
