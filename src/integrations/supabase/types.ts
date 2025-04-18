@@ -98,6 +98,7 @@ export type Database = {
           price_per_night: number
           property_type: string
           rating: number | null
+          short_description: string | null
           title: string
           total_ratings: number | null
         }
@@ -115,6 +116,7 @@ export type Database = {
           price_per_night?: number
           property_type?: string
           rating?: number | null
+          short_description?: string | null
           title: string
           total_ratings?: number | null
         }
@@ -132,6 +134,7 @@ export type Database = {
           price_per_night?: number
           property_type?: string
           rating?: number | null
+          short_description?: string | null
           title?: string
           total_ratings?: number | null
         }
@@ -208,13 +211,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: true
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "reviews_property_id_fkey"
             columns: ["property_id"]
