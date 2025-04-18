@@ -1,9 +1,11 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Star } from "lucide-react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/services/reviewService";
 
 interface PropertyReviewFormProps {
@@ -13,80 +15,122 @@ interface PropertyReviewFormProps {
 }
 
 export function PropertyReviewForm({ 
-  propertyId, 
-  userId, 
-  onSuccess 
+  propertyId,
+  userId,
+  onSuccess
 }: PropertyReviewFormProps) {
   const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
+  const [hoveredRating, setHoveredRating] = useState(0);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: {
+      comment: ""
+    }
+  });
 
-  const handleSubmit = async () => {
+  const { data: hasReviewed, isLoading: isCheckingReview } = useQuery({
+    queryKey: ['hasUserReviewed', propertyId, userId],
+    queryFn: async () => {
+      if (!userId) return false;
+      return reviewService.hasUserReviewedProperty(propertyId, userId);
+    },
+    enabled: !!userId && !!propertyId,
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: (data: { comment: string }) => {
+      return reviewService.submitReview({
+        property_id: propertyId,
+        rating,
+        comment: data.comment,
+        user_id: userId
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Review submitted",
+        description: "Thank you for sharing your experience!"
+      });
+      queryClient.invalidateQueries({ queryKey: ['propertyReviews', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['hasUserReviewed', propertyId, userId] });
+      reset();
+      setRating(0);
+      if (onSuccess) onSuccess();
+    },
+    onError: (error: any) => {
+      console.error("Review submission error:", error);
+      toast({
+        title: "Failed to submit review",
+        description: error.message || "Please try again later",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const onSubmit = (data: { comment: string }) => {
     if (rating === 0) {
       toast({
-        title: "Rating Required",
-        description: "Please select a rating before submitting",
+        title: "Rating required",
+        description: "Please select a star rating before submitting",
         variant: "destructive"
       });
       return;
     }
-
-    try {
-      await reviewService.submitReview({
-        property_id: propertyId,
-        user_id: userId,
-        rating,
-        comment: comment.trim()
-      });
-
-      toast({
-        title: "Review Submitted",
-        description: "Thank you for your feedback!"
-      });
-
-      // Reset form
-      setRating(0);
-      setComment("");
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit review. Please try again.",
-        variant: "destructive"
-      });
-    }
+    
+    reviewMutation.mutate(data);
   };
 
+  if (isCheckingReview) {
+    return <div className="text-center py-4">Checking review status...</div>;
+  }
+
+  if (hasReviewed) {
+    return (
+      <div className="p-4 text-center border rounded-lg bg-gray-50">
+        <p className="text-green-600 font-medium">You've already reviewed this property</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 p-4 border rounded-lg">
-      <div className="flex justify-center space-x-2">
+    <div className="p-4 border rounded-lg bg-white shadow-sm">
+      <h3 className="font-medium text-lg mb-2">Rate this property</h3>
+      
+      <div className="flex mb-4 mt-2">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`w-8 h-8 cursor-pointer ${
-              rating >= star 
-                ? "text-yellow-400 fill-yellow-400" 
+            className={`w-8 h-8 cursor-pointer transition-colors ${
+              (hoveredRating || rating) >= star
+                ? "text-yellow-400 fill-yellow-400"
                 : "text-gray-300"
             }`}
+            onMouseEnter={() => setHoveredRating(star)}
+            onMouseLeave={() => setHoveredRating(0)}
             onClick={() => setRating(star)}
           />
         ))}
       </div>
       
-      <Textarea
-        placeholder="Write your review (optional)"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        className="w-full min-h-[100px]"
-      />
-      
-      <Button 
-        onClick={handleSubmit} 
-        className="w-full"
-        disabled={rating === 0}
-      >
-        Submit Review
-      </Button>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="mb-4">
+          <Textarea
+            placeholder="Share details of your experience (optional)"
+            className="resize-none"
+            {...register("comment")}
+          />
+        </div>
+        
+        <Button 
+          type="submit" 
+          disabled={reviewMutation.isPending}
+          className="w-full"
+        >
+          {reviewMutation.isPending ? "Submitting..." : "Submit Review"}
+        </Button>
+      </form>
     </div>
   );
 }

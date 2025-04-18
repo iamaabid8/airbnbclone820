@@ -6,7 +6,6 @@ type Property = {
   id: string;
   title: string;
   description: string | null;
-  short_description: string | null;
   location: string;
   images: string[] | null;
   price_per_night: number;
@@ -47,11 +46,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
               <span className="inline-block mr-2 text-pink-500">📍</span>
               {property.location}
             </p>
-            {property.short_description && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {property.short_description}
-              </p>
-            )}
             {property.amenities && property.amenities.length > 0 && (
               <p className="text-sm text-muted-foreground mt-2">
                 {property.amenities.slice(0, 3).join(" · ")}
