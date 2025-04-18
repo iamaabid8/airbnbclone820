@@ -1,5 +1,5 @@
 
-import { Instagram, Facebook, Twitter, Snapchat } from "lucide-react";
+import { Instagram, Facebook, Twitter, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const Footer = () => {
@@ -12,7 +12,7 @@ export const Footer = () => {
             <Instagram className="h-6 w-6" />
           </a>
           <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
-            <Snapchat className="h-6 w-6" />
+            <Youtube className="h-6 w-6" />
           </a>
           <a href="#" className="text-gray-600 hover:text-gray-900 transition-colors">
             <Twitter className="h-6 w-6" />
