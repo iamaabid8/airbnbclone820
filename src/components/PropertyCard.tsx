@@ -1,6 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Star } from "lucide-react";
 
 type Property = {
   id: string;
@@ -11,6 +12,8 @@ type Property = {
   price_per_night: number;
   amenities: string[];
   property_type: string;
+  rating: number | null;
+  total_ratings: number | null;
 };
 
 export const PropertyCard = ({ property }: { property: Property }) => {
@@ -32,6 +35,13 @@ export const PropertyCard = ({ property }: { property: Property }) => {
           onError={handleImageError}
           loading="lazy"
         />
+        {property.rating !== null && property.total_ratings !== null && (
+          <div className="absolute top-3 left-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark flex items-center gap-1">
+            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+            <span>{property.rating.toFixed(1)}</span>
+            <span className="text-gray-500">({property.total_ratings})</span>
+          </div>
+        )}
         <div className="absolute top-3 right-3 bg-white px-2 py-1 rounded-full text-xs font-medium text-airbnb-dark">
           {property.property_type}
         </div>
