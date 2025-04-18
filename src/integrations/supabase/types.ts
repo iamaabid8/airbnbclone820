@@ -98,6 +98,7 @@ export type Database = {
           price_per_night: number
           property_type: string
           rating: number | null
+          short_description: string | null
           title: string
           total_ratings: number | null
         }
@@ -115,6 +116,7 @@ export type Database = {
           price_per_night?: number
           property_type?: string
           rating?: number | null
+          short_description?: string | null
           title: string
           total_ratings?: number | null
         }
@@ -132,6 +134,7 @@ export type Database = {
           price_per_night?: number
           property_type?: string
           rating?: number | null
+          short_description?: string | null
           title?: string
           total_ratings?: number | null
         }
