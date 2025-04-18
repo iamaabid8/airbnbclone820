@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { differenceInDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 
 interface BookingCardProps {
   pricePerNight: number;
@@ -20,7 +20,7 @@ interface BookingCardProps {
   onBookingSubmit: () => void;
 }
 
-export const BookingCard = ({
+const BookingCardComponent = ({
   pricePerNight,
   maxGuests,
   propertyId,
@@ -34,11 +34,12 @@ export const BookingCard = ({
 }: BookingCardProps) => {
   const [isAvailable, setIsAvailable] = useState(true);
   
+  // Only query when necessary dates are provided
+  const shouldCheckAvailability = !!(propertyId && dates.checkIn && dates.checkOut);
+  
   const { data: availabilityData, isLoading: checkingAvailability } = useQuery({
     queryKey: ['availability', propertyId, dates.checkIn, dates.checkOut],
     queryFn: async () => {
-      if (!dates.checkIn || !dates.checkOut) return { available: true };
-      
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -56,7 +57,8 @@ export const BookingCard = ({
         conflictingDates: data 
       };
     },
-    enabled: !!(propertyId && dates.checkIn && dates.checkOut),
+    enabled: shouldCheckAvailability,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
   useEffect(() => {
@@ -65,11 +67,17 @@ export const BookingCard = ({
     }
   }, [availabilityData]);
   
-  // Calculate total price
-  const numberOfNights = dates.checkIn && dates.checkOut 
-    ? differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))
-    : 0;
-  const totalPrice = numberOfNights * pricePerNight;
+  // Calculate total price with memoization
+  const { numberOfNights, totalPrice } = useMemo(() => {
+    const nights = dates.checkIn && dates.checkOut 
+      ? differenceInDays(new Date(dates.checkOut), new Date(dates.checkIn))
+      : 0;
+    
+    return {
+      numberOfNights: nights,
+      totalPrice: nights * pricePerNight
+    };
+  }, [dates.checkIn, dates.checkOut, pricePerNight]);
 
   return (
     <div className="sticky top-24 bg-white rounded-xl shadow-lg p-6">
@@ -155,3 +163,6 @@ export const BookingCard = ({
     </div>
   );
 };
+
+// Export a memoized version of the component
+export const BookingCard = memo(BookingCardComponent);

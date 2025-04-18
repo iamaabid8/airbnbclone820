@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Search, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,19 +42,20 @@ const propertyTypes = [
   "Cabin"
 ];
 
-export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
+// Create a memoized component to prevent unnecessary re-renders
+const PropertySearchComponent = ({ onSearch }: PropertySearchProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<PropertyFilters>({
     location: "",
-    priceRange: [0, 25000], // Updated to a more realistic range based on the data
+    priceRange: [0, 25000],
     propertyType: "All types",
     amenities: [],
     minRating: 0,
   });
   const { toast } = useToast();
 
-  // Handle search button click
-  const handleSearch = () => {
+  // Memoize the search handler
+  const handleSearch = useCallback(() => {
     if (!filters.location) {
       toast({
         title: "Location required",
@@ -64,7 +65,13 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
       return;
     }
     onSearch(filters);
-  };
+  }, [filters, onSearch, toast]);
+
+  // Memoize the filter handler
+  const applyFilters = useCallback(() => {
+    onSearch(filters);
+    setShowFilters(false);
+  }, [filters, onSearch]);
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -168,10 +175,7 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
                 </div>
               </div>
               <div className="flex justify-end mt-4">
-                <Button onClick={() => {
-                  onSearch(filters);
-                  setShowFilters(false);
-                }}>Apply Filters</Button>
+                <Button onClick={applyFilters}>Apply Filters</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -185,3 +189,6 @@ export const PropertySearch = ({ onSearch }: PropertySearchProps) => {
     </div>
   );
 };
+
+// Export the memoized component
+export const PropertySearch = memo(PropertySearchComponent);

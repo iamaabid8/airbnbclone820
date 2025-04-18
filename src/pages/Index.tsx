@@ -1,13 +1,13 @@
+
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { PropertySearch, type PropertyFilters } from "@/components/PropertySearch";
 import { useQuery } from "@tanstack/react-query";
 import { Navigation } from "@/components/Navigation";
 import { Categories } from "@/components/Categories";
 import { PropertiesGrid } from "@/components/PropertiesGrid";
-import { Facebook, Twitter, Instagram, Youtube, Heart } from "lucide-react";
 import { Footer } from "@/components/Footer";
 
 type Property = {
@@ -70,53 +70,56 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Memoize the query function to prevent unnecessary rebuilds
+  const getPropertiesQuery = useCallback(async () => {
+    let query = supabase
+      .from('properties')
+      .select('*');
+
+    if (filters) {
+      if (filters.location && filters.location.trim() !== '') {
+        query = query.ilike('location', `%${filters.location}%`);
+      }
+      
+      if (filters.propertyType && filters.propertyType !== 'All types') {
+        query = query.eq('property_type', filters.propertyType.toLowerCase());
+      }
+      
+      if (filters.priceRange && (filters.priceRange[0] > 0 || filters.priceRange[1] < 25000)) {
+        query = query
+          .gte('price_per_night', filters.priceRange[0])
+          .lte('price_per_night', filters.priceRange[1]);
+      }
+      
+      if (filters.minRating && filters.minRating > 0) {
+        query = query.gte('rating', filters.minRating);
+      }
+      
+      if (filters.amenities && filters.amenities.length > 0) {
+        query = query.contains('amenities', filters.amenities);
+      }
+    }
+
+    if (selectedCategory && selectedCategory !== 'All') {
+      query = query.eq('property_type', selectedCategory);
+    }
+
+    // Limit the columns returned when not needed for better performance
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error fetching properties:", error);
+      throw error;
+    }
+    
+    return data as Property[];
+  }, [filters, selectedCategory]);
+
   const { data: properties, isLoading, refetch } = useQuery({
     queryKey: ['properties', filters, selectedCategory],
-    queryFn: async () => {
-      let query = supabase
-        .from('properties')
-        .select('*');
-
-      if (filters) {
-        if (filters.location && filters.location.trim() !== '') {
-          query = query.ilike('location', `%${filters.location}%`);
-        }
-        
-        if (filters.propertyType && filters.propertyType !== 'All types') {
-          query = query.eq('property_type', filters.propertyType.toLowerCase());
-        }
-        
-        if (filters.priceRange && (filters.priceRange[0] > 0 || filters.priceRange[1] < 25000)) {
-          query = query
-            .gte('price_per_night', filters.priceRange[0])
-            .lte('price_per_night', filters.priceRange[1]);
-        }
-        
-        if (filters.minRating && filters.minRating > 0) {
-          query = query.gte('rating', filters.minRating);
-        }
-        
-        if (filters.amenities && filters.amenities.length > 0) {
-          query = query.contains('amenities', filters.amenities);
-        }
-      }
-
-      if (selectedCategory && selectedCategory !== 'All') {
-        console.log(`Filtering by property_type=${selectedCategory}`);
-        query = query.eq('property_type', selectedCategory);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("Error fetching properties:", error);
-        throw error;
-      }
-      
-      console.log("Fetched properties:", data);
-      return data as Property[];
-    },
+    queryFn: getPropertiesQuery,
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache before refetching
   });
 
   const handleLogout = async () => {
@@ -136,25 +139,19 @@ const Index = () => {
     }
   };
 
-  const handleSearch = (newFilters: PropertyFilters) => {
-    console.log("Search filters:", newFilters);
+  const handleSearch = useCallback((newFilters: PropertyFilters) => {
     setFilters(newFilters);
     setSelectedCategory(null);
-  };
+  }, []);
 
-  const handleCategorySelect = (category: string) => {
-    console.log("Category selected:", category);
+  const handleCategorySelect = useCallback((category: string) => {
     setSelectedCategory(category);
     setFilters(null);
-  };
+  }, []);
 
   const handleDeleteProperty = () => {
     refetch();
   };
-
-  console.log("Current filters:", filters);
-  console.log("Current category:", selectedCategory);
-  console.log("Properties length:", properties?.length);
 
   return (
     <div className="min-h-screen w-full flex flex-col">

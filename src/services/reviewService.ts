@@ -2,11 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Service for managing property reviews
+ * Service for managing property reviews with performance optimizations
  */
 export const reviewService = {
   /**
-   * Get reviews for a property
+   * Get reviews for a property with optimized field selection
    * @param propertyId The ID of the property
    */
   getPropertyReviews: async (propertyId: string) => {
@@ -52,20 +52,19 @@ export const reviewService = {
   },
 
   /**
-   * Check if a user has already reviewed a property
+   * Check if a user has already reviewed a property with optimized query
    * @param propertyId The ID of the property
    * @param userId The ID of the user
    */
   hasUserReviewedProperty: async (propertyId: string, userId: string) => {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('reviews')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('property_id', propertyId)
-      .eq('user_id', userId)
-      .maybeSingle();
+      .eq('user_id', userId);
       
     if (error) throw error;
-    return !!data;
+    return count !== null && count > 0;
   },
   
   /**
@@ -73,14 +72,13 @@ export const reviewService = {
    * @param bookingId The ID of the booking
    */
   hasReviewedBooking: async (bookingId: string) => {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('reviews')
-      .select('id')
-      .eq('booking_id', bookingId)
-      .single();
+      .select('id', { count: 'exact', head: true })
+      .eq('booking_id', bookingId);
       
-    if (error && error.code !== 'PGSQL_ERROR_NO_DATA_FOUND') throw error;
-    return !!data;
+    if (error) throw error;
+    return count !== null && count > 0;
   },
   
   /**
@@ -112,7 +110,7 @@ export const reviewService = {
   },
   
   /**
-   * Get completed bookings that can be reviewed
+   * Get completed bookings that can be reviewed with optimized query
    * @param userId The ID of the user
    * @param propertyId The ID of the property
    */
@@ -121,11 +119,7 @@ export const reviewService = {
     
     const { data, error } = await supabase
       .from('bookings')
-      .select(`
-        id,
-        check_in,
-        check_out
-      `)
+      .select('id, check_in, check_out')
       .eq('user_id', userId)
       .eq('property_id', propertyId)
       .lt('check_out', now) // Only past bookings
@@ -134,14 +128,19 @@ export const reviewService = {
       
     if (error) throw error;
     
-    // Check which bookings have not been reviewed yet
-    const reviewableBookings = [];
-    for (const booking of data || []) {
+    // For each booking, check if it has been reviewed already
+    // We use Promise.all to make parallel requests for performance
+    const reviewStatusPromises = data?.map(async (booking) => {
       const hasReviewed = await reviewService.hasReviewedBooking(booking.id);
-      if (!hasReviewed) {
-        reviewableBookings.push(booking);
-      }
-    }
+      return { booking, hasReviewed };
+    }) || [];
+    
+    const reviewStatuses = await Promise.all(reviewStatusPromises);
+    
+    // Filter out bookings that have already been reviewed
+    const reviewableBookings = reviewStatuses
+      .filter(status => !status.hasReviewed)
+      .map(status => status.booking);
     
     return reviewableBookings;
   }

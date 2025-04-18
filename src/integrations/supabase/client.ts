@@ -6,4 +6,22 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://bfymxnnacoqszftgtjwa.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmeW14bm5hY29xc3pmdGd0andhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4NDE2NjgsImV4cCI6MjA1NTQxNzY2OH0.2BTWMd8pOX6WU0nRRgivmKMJx5seJ8Jui0G2egWAOn4";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configure options for better performance
+const supabaseOptions = {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'Cache-Control': 'max-age=300', // 5 minutes cache
+      'x-application-name': 'homi-vacation-rental'
+    },
+  },
+  realtime: {
+    timeout: 30000, // 30 seconds (default is 10)
+  }
+};
+
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, supabaseOptions);

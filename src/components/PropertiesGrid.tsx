@@ -1,10 +1,11 @@
+
+import { memo, useCallback } from "react";
 import { ImageOff, Edit, Trash2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import type { PropertyFilters } from "./PropertySearch";
 import { Button } from "./ui/button";
 import { toast } from "./ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
 
 interface Property {
   id: string;
@@ -32,64 +33,27 @@ interface PropertiesGridProps {
   onDelete?: (id: string) => void;
 }
 
-export const PropertiesGrid = ({ 
-  properties, 
-  isLoading, 
-  selectedCategory, 
-  filters,
-  isAdmin = false,
-  onDelete
-}: PropertiesGridProps) => {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+// Create a memo component for the admin view to prevent unnecessary rerenders
+const AdminPropertyCard = memo(({ 
+  property, 
+  onDelete 
+}: { 
+  property: Property; 
+  onDelete: (id: string) => void 
+}) => {
+  const handleDelete = useCallback(() => {
+    onDelete(property.id);
+  }, [property.id, onDelete]);
 
-  useEffect(() => {
-    const fetchUserId = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setCurrentUserId(session?.user?.id || null);
-    };
-
-    fetchUserId();
-  }, []);
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('properties')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Property deleted successfully",
-      });
-
-      if (onDelete) {
-        onDelete(id);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to delete property: " + error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  console.log("Properties received:", properties);
-  console.log("Loading state:", isLoading);
-  console.log("Filter applied:", filters);
-  console.log("Selected category:", selectedCategory);
-
-  const renderAdminView = (property: Property) => (
-    <div key={property.id} className="bg-white rounded-lg shadow p-6">
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
       <div className="flex gap-4">
         <div className="w-40 h-32">
           <img
             src={property.images?.[0] || "/placeholder.svg"}
             alt={property.title}
             className="w-full h-full object-cover rounded-lg"
+            loading="lazy" // Add lazy loading for images
           />
         </div>
         <div className="flex-1">
@@ -103,7 +67,7 @@ export const PropertiesGrid = ({
                 variant="outline" 
                 size="sm"
                 className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={() => handleDelete(property.id)}
+                onClick={handleDelete}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 Delete
@@ -143,6 +107,41 @@ export const PropertiesGrid = ({
       </div>
     </div>
   );
+});
+
+const PropertiesGridComponent = ({ 
+  properties, 
+  isLoading, 
+  selectedCategory, 
+  filters,
+  isAdmin = false,
+  onDelete
+}: PropertiesGridProps) => {
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Property deleted successfully",
+      });
+
+      if (onDelete) {
+        onDelete(id);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to delete property: " + error.message,
+        variant: "destructive",
+      });
+    }
+  }, [onDelete]);
 
   return (
     <section className="py-20 px-6 bg-gray-50">
@@ -163,7 +162,13 @@ export const PropertiesGrid = ({
         ) : properties && properties.length > 0 ? (
           <div className={`grid gap-6 ${isAdmin ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
             {properties.map((property) => (
-              isAdmin ? renderAdminView(property) : (
+              isAdmin ? (
+                <AdminPropertyCard 
+                  key={property.id}
+                  property={property}
+                  onDelete={handleDelete}
+                />
+              ) : (
                 <div key={property.id} className="relative">
                   <PropertyCard property={property} />
                 </div>
@@ -180,3 +185,6 @@ export const PropertiesGrid = ({
     </section>
   );
 };
+
+// Export the memoized component
+export const PropertiesGrid = memo(PropertiesGridComponent);
