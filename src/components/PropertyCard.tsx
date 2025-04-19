@@ -1,9 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Star, MessageSquare } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { reviewService } from "@/services/reviewService";
+import { Star } from "lucide-react";
 
 type Property = {
   id: string;
@@ -18,19 +16,6 @@ type Property = {
   total_ratings: number | null;
 };
 
-// Define a type for the review data structure
-type Review = {
-  id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  user_id: string;
-  profiles?: {
-    name: string | null;
-    avatar_url: string | null;
-  } | null;
-};
-
 export const PropertyCard = ({ property }: { property: Property }) => {
   const defaultImage = "https://images.unsplash.com/photo-1487958449943-2429e8be8625";
 
@@ -39,16 +24,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
   };
 
   const imageUrl = property.images?.[0] || defaultImage;
-
-  // Fetch the most recent review for this property
-  const { data: recentReview } = useQuery<Review | null>({
-    queryKey: ['recentReview', property.id],
-    queryFn: async () => {
-      const reviews = await reviewService.getPropertyReviews(property.id);
-      return reviews?.[0] || null;
-    },
-    enabled: !!property.id && property.total_ratings !== null && property.total_ratings > 0,
-  });
 
   return (
     <div className="property-card rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -86,15 +61,6 @@ export const PropertyCard = ({ property }: { property: Property }) => {
                 {property.amenities.slice(0, 3).join(" · ")}
                 {property.amenities.length > 3 && " · ..."}
               </p>
-            )}
-            {recentReview && (
-              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                  <MessageSquare className="w-4 h-4" />
-                  <span className="font-medium">{recentReview.profiles?.name || 'Guest'}</span>
-                </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{recentReview.comment}</p>
-              </div>
             )}
           </div>
         </div>
