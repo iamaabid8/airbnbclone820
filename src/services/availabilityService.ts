@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -25,12 +26,13 @@ export const availabilityService = {
    * Check if a property is available for specific dates
    */
   checkAvailability: async (propertyId: string, startDate: string, endDate: string) => {
-    // Only check for non-canceled bookings that overlap with the requested dates
+    // We need to check if there are any overlapping availability periods
+    // that would make these dates unavailable
     const { data, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('property_id', propertyId)
-      .eq('status', 'confirmed') // Only check confirmed bookings
+      .neq('status', 'canceled')
       .or(`check_in.lte.${endDate},check_out.gte.${startDate}`);
       
     if (error) throw error;
