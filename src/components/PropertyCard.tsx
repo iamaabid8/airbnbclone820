@@ -18,6 +18,19 @@ type Property = {
   total_ratings: number | null;
 };
 
+// Define a type for the review data structure
+type Review = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  user_id: string;
+  profiles?: {
+    name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
 export const PropertyCard = ({ property }: { property: Property }) => {
   const defaultImage = "https://images.unsplash.com/photo-1487958449943-2429e8be8625";
 
@@ -28,7 +41,7 @@ export const PropertyCard = ({ property }: { property: Property }) => {
   const imageUrl = property.images?.[0] || defaultImage;
 
   // Fetch the most recent review for this property
-  const { data: recentReview } = useQuery({
+  const { data: recentReview } = useQuery<Review | null>({
     queryKey: ['recentReview', property.id],
     queryFn: async () => {
       const reviews = await reviewService.getPropertyReviews(property.id);
